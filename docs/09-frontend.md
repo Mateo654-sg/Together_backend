@@ -470,7 +470,7 @@ Tablet
 
 Foldables
 
-Web (futuro)
+Web
 
 ---
 
@@ -790,8 +790,6 @@ Español
 
 English
 
-Português
-
 ---
 
 Monedas
@@ -801,10 +799,6 @@ COP
 USD
 
 EUR
-
-BRL
-
-MXN
 
 ---
 
