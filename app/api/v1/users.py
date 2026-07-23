@@ -7,6 +7,8 @@ from app.api.deps import get_current_user
 from app.db.session import get_db
 from app.models.user import User
 from app.schemas.user import (
+    ChangePasswordRequest,
+    SessionHistoryResponse,
     UpdateAvatarRequest,
     UpdateUserRequest,
     UpdateUserSettingsRequest,
@@ -14,8 +16,10 @@ from app.schemas.user import (
     UserSettingsResponse,
     UserStatisticsResponse,
 )
+from app.use_cases.users.change_password import ChangePasswordUseCase
 from app.use_cases.users.get_settings import GetSettingsUseCase
 from app.use_cases.users.get_statistics import GetUserStatisticsUseCase
+from app.use_cases.users.list_sessions import ListSessionHistoryUseCase
 from app.use_cases.users.manage_profile import (
     DeleteUserUseCase,
     UpdateUserProfileUseCase,
@@ -94,4 +98,25 @@ async def get_statistics(
 ):
     """Retorna estadísticas personales del usuario."""
     use_case = GetUserStatisticsUseCase(db)
+    return await use_case.execute(current_user.id)
+
+
+@router.post("/change-password", status_code=204)
+async def change_password(
+    data: ChangePasswordRequest,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """FR-125: Cambiar contraseña."""
+    use_case = ChangePasswordUseCase(db)
+    await use_case.execute(current_user.id, data.current_password, data.new_password)
+
+
+@router.get("/sessions", response_model=SessionHistoryResponse)
+async def list_sessions(
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """FR-126: Consultar historial de sesiones."""
+    use_case = ListSessionHistoryUseCase(db)
     return await use_case.execute(current_user.id)

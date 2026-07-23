@@ -1,133 +1,281 @@
-# 💕 Together — Backend
+<div align="center">
 
-API REST de Together, construida con FastAPI siguiendo Clean Architecture.
+# Together — Backend
 
-Ver documentación completa del producto en la carpeta `/docs` del proyecto
-(Documentos 01 al 17).
+**API REST para la gestión inteligente de finanzas de pareja**
+
+[![Python](https://img.shields.io/badge/Python-3.12+-3776AB?logo=python&logoColor=white)](https://www.python.org/)
+[![FastAPI](https://img.shields.io/badge/FastAPI-0.115-009688?logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com/)
+[![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16-4169E1?logo=postgresql&logoColor=white)](https://www.postgresql.org/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+
+</div>
 
 ---
 
-## Stack
+## Acerca de
 
-- **Framework:** FastAPI
-- **Lenguaje:** Python 3.12+
-- **Base de datos:** PostgreSQL 16 (SQLAlchemy 2 async + Alembic)
-- **Cache:** Redis
-- **Auth:** JWT (Access 15 min / Refresh 30 días con rotación) + Argon2id
+**Together** es una aplicación móvil diseñada para parejas que desean gestionar sus finanzas de manera colaborativa e inteligente. Este repositorio contiene el **backend** de la aplicación, una API REST construida con FastAPI siguiendo los principios de **Clean Architecture** y **Repository Pattern**.
+
+### Características principales
+
+- Registro y autenticación segura (JWT + Argon2id)
+- Gestión de finanzas personales y compartidas
+- Metas y presupuestos financieros
+- Asistente de IA para análisis financiero
+- Chat integrado entre parejas
+- Dashboard y reportes en tiempo real
+- Sistema de notificaciones y recordatorios
+
+---
+
+## Stack Tecnológico
+
+| Componente | Tecnología |
+|------------|------------|
+| **Framework** | FastAPI |
+| **Lenguaje** | Python 3.12+ |
+| **Base de datos** | PostgreSQL 16 |
+| **ORM** | SQLAlchemy 2 (async) |
+| **Migraciones** | Alembic |
+| **Cache** | Redis 7 |
+| **Auth** | JWT (Access 15min / Refresh 30d con rotación) |
+| **Hashing** | Argon2id |
+| **Validación** | Pydantic v2 |
+| **Testing** | pytest + pytest-asyncio |
+| **Linting** | Ruff |
+| **Contenedorización** | Docker + Docker Compose |
+
+---
 
 ## Arquitectura
 
-Clean Architecture con Repository Pattern y Use Cases:
+Clean Architecture con Repository Pattern:
 
 ```
 app/
-├── api/            # Routers + dependencias (Presentation)
-├── core/           # Config, seguridad, excepciones
-├── db/             # Engine, session, base declarativa
-├── models/         # Modelos ORM (SQLAlchemy)
-├── schemas/        # Pydantic (request/response)
-├── repositories/   # Acceso a datos (Repository Pattern)
-├── use_cases/      # Lógica de negocio (Application)
-├── services/       # Servicios externos (futuro: email, S3, IA)
-└── middlewares/
+├── api/v1/          # Routers (endpoints HTTP)
+├── core/            # Configuración, seguridad, excepciones
+├── db/              # Engine, session, base declarativa
+├── models/          # Modelos ORM (SQLAlchemy)
+├── schemas/         # Schemas Pydantic (request/response)
+├── repositories/    # Capa de acceso a datos
+├── use_cases/       # Lógica de negocio
+├── services/        # Servicios externos (AI, etc.)
+└── middlewares/      # Middlewares FastAPI
 ```
 
-Flujo de dependencias:
-
+**Flujo de datos:**
 ```
 Router → Use Case → Repository → Database
 ```
 
-Nunca se accede a la base de datos directamente desde los routers.
+Los routers nunca acceden directamente a la base de datos. Toda la lógica de negocio vive en los Use Cases.
 
-## Setup local (sin Docker)
+---
+
+## Instalación
+
+### Requisitos
+
+- Python 3.12+
+- PostgreSQL 16
+- Redis 7
+- Docker y Docker Compose (opcional)
+
+### Setup Local
 
 ```bash
+# Clonar el repositorio
+git clone https://github.com/tu-usuario/together-backend.git
+cd together-backend
+
+# Crear entorno virtual
 python3 -m venv .venv
 source .venv/bin/activate
+
+# Instalar dependencias
 pip install -r requirements.txt
 
+# Configurar variables de entorno
 cp .env.example .env
-# Editar .env con tus credenciales de Postgres/Redis/JWT
+# Editar .env con tus credenciales
 
 # Crear base de datos
 createdb together_db
 
-# Aplicar migraciones
+# Ejecutar migraciones
 alembic upgrade head
 
-# Levantar servidor
+# Iniciar servidor
 uvicorn app.main:app --reload
 ```
 
-La API queda disponible en `http://localhost:8000`.
+La API estará disponible en `http://localhost:8000`
 
 Documentación interactiva: `http://localhost:8000/docs`
 
-## Setup con Docker
+### Setup con Docker
 
 ```bash
 docker compose -f docker-compose.dev.yml up --build
 ```
 
-Levanta: `backend`, `postgres`, `redis`, `pgadmin` (puerto 5050).
+Servicios levantados:
 
-## Migraciones
+| Servicio | Puerto | Descripción |
+|----------|--------|-------------|
+| `backend` | 8000 | API FastAPI |
+| `postgres` | 5432 | PostgreSQL 16 |
+| `redis` | 6379 | Redis 7 |
+| `pgadmin` | 5050 | Admin de PostgreSQL |
+
+---
+
+## Variables de Entorno
+
+| Variable | Valor por defecto | Descripción |
+|----------|-------------------|-------------|
+| `APP_ENV` | `development` | Entorno de ejecución |
+| `DATABASE_URL` | `postgresql+asyncpg://...` | URL de conexión async |
+| `DATABASE_URL_SYNC` | `postgresql+psycopg2://...` | URL de conexión sync (Alembic) |
+| `REDIS_URL` | `redis://localhost:6379/0` | URL de Redis |
+| `JWT_SECRET` | `CHANGE_ME` | Secreto para firmar JWT |
+| `JWT_ALGORITHM` | `HS256` | Algoritmo de firmado |
+| `ACCESS_TOKEN_EXPIRE_MINUTES` | `15` | Caducidad access token |
+| `REFRESH_TOKEN_EXPIRE_DAYS` | `30` | Caducidad refresh token |
+
+Ver `.env.example` para la lista completa.
+
+---
+
+## Comandos Útiles
+
+### Migraciones
 
 ```bash
-# Crear una nueva migración a partir de cambios en los modelos
-alembic revision --autogenerate -m "descripción del cambio"
+# Crear migración
+alembic revision --autogenerate -m "descripción"
 
-# Aplicar migraciones pendientes
+# Aplicar migraciones
 alembic upgrade head
 
-# Revertir la última migración
+# Revertir última migración
 alembic downgrade -1
 ```
 
-## Testing
-
-Requiere una base de datos `together_test_db` separada:
+### Testing
 
 ```bash
+# Crear base de datos de test
 createdb together_test_db
 
-pytest                                    # correr toda la suite
-pytest --cov=app --cov-report=term-missing  # con cobertura
-pytest tests/unit                         # solo unitarios
-pytest tests/integration                  # solo integración
+# Ejecutar todos los tests
+pytest
+
+# Con cobertura
+pytest --cov=app --cov-report=html
+
+# Solo tests unitarios
+pytest tests/unit
+
+# Solo tests de integración
+pytest tests/integration
 ```
 
-Cobertura mínima exigida: **90%** (Documento 13 — Testing Strategy).
-
-## Calidad de código
+### Calidad de Código
 
 ```bash
-ruff check app/          # Lint
-ruff check app/ --fix    # Autofix
-bandit -r app/           # Seguridad estática
+# Verificar errores
+python3 -m ruff check app/ tests/
+
+# Auto-corregir
+python3 -m ruff check app/ tests/ --fix
+
+# Seguridad estática
+bandit -r app/
 ```
 
-## Endpoints implementados (Fase 1 — Auth & Users)
+---
 
-| Método | Endpoint | Descripción | FR |
-|--------|----------|-------------|-----|
-| POST | `/api/v1/auth/register` | Crear cuenta | FR-001 |
-| POST | `/api/v1/auth/login` | Iniciar sesión | FR-002 |
-| POST | `/api/v1/auth/refresh` | Renovar tokens (rotación) | — |
-| POST | `/api/v1/auth/logout` | Cerrar sesión | FR-005 |
-| POST | `/api/v1/auth/forgot-password` | Solicitar recuperación | FR-003 (pendiente) |
-| POST | `/api/v1/auth/reset-password` | Restablecer contraseña | FR-003 (pendiente) |
-| GET | `/api/v1/users/me` | Perfil del usuario autenticado | — |
-| PUT | `/api/v1/users/me` | Editar perfil | FR-006 |
-| DELETE | `/api/v1/users/me` | Eliminar cuenta (soft delete) | FR-010 |
+## Módulos Implementados
 
-## Próximos módulos (en orden sugerido)
+| Módulo | Endpoints | Descripción |
+|--------|-----------|-------------|
+| **Auth** | 4 | Registro, login, refresh, logout |
+| **Users** | 9 | Perfil, configuración, estadísticas, sesiones |
+| **Couples** | 5 | Invitación, aceptar, rechazar, estado, desvincular |
+| **Personal Finances** | 11 | Categorías, gastos e ingresos personales |
+| **Shared Finances** | 9 | Gastos, ingresos y deudas compartidas |
+| **Goals** | 7 | Metas financieras con contribuciones |
+| **Budgets** | 5 | Presupuestos con alertas |
+| **Dashboard** | 2 | Dashboard personal y de pareja |
+| **Reports** | 6 | Generación y descarga de reportes |
+| **Statistics** | 2 | Estadísticas mensuales y personales |
+| **AI Assistant** | 14 | Chat, análisis, predicciones, simulador |
+| **Reminders** | 5 | Recordatorios financieros |
+| **Chat** | 3 | Mensajes entre parejas |
+| **Notifications** | 4 | Notificaciones in-app |
 
-1. **Pareja** (Couples): invitar, aceptar, desvincular (FR-011 a FR-018)
-2. **Finanzas personales**: ingresos, gastos, categorías (FR-019 a FR-040)
-3. **Finanzas compartidas**: gastos compartidos, deudas (FR-041 a FR-060)
-4. **Metas**, **Presupuestos**, **Dashboard**...
+**Total: 84 endpoints, 135 requerimientos funcionales**
 
-Cada módulo nuevo debe seguir el mismo patrón: `models → schemas →
-repositories → use_cases → api/v1/router → tests`.
+---
+
+## Estructura del Proyecto
+
+```
+together-backend/
+├── alembic/              # Migraciones de base de datos
+│   └── versions/         # 9 migraciones
+├── app/
+│   ├── api/v1/           # 18 routers
+│   ├── core/             # Config, seguridad, excepciones
+│   ├── db/               # Session y base
+│   ├── models/           # 21 modelos ORM
+│   ├── schemas/          # 14 schemas Pydantic
+│   ├── repositories/     # 21 repositories
+│   ├── use_cases/        # 12 dominios, ~65 use cases
+│   └── services/ai/      # Servicio de IA
+├── docs/                 # 17 documentos de especificación
+├── tests/
+│   ├── integration/      # 16 archivos de tests
+│   └── unit/             # 2 archivos de tests
+├── .env.example
+├── docker-compose.dev.yml
+├── Dockerfile
+├── requirements.txt
+└── README.md
+```
+
+---
+
+## Documentación
+
+Los documentos de especificación del producto se encuentran en `/docs`:
+
+| Documento | Contenido |
+|-----------|-----------|
+| `01-product-vision.md` | Visión del producto |
+| `02-functional-requirements.md` | 135 requerimientos funcionales |
+| `03-non-functional-requirements.md` | Requerimientos no funcionales |
+| `06-system-architecture.md` | Arquitectura del sistema |
+| `07-database-design.md` | Diseño de base de datos |
+| `08-backend-api.md` | Especificación de la API |
+| `10-ai-module.md` | Módulo de IA |
+| `12-security.md` | Estrategia de seguridad |
+| `13-testing.md` | Estrategia de testing |
+| `15-roadmap.md` | Roadmap del producto |
+
+Ver `docs/API.md` para la referencia completa de endpoints.
+
+---
+
+## Contribuir
+
+Ver [CONTRIBUTING.md](CONTRIBUTING.md) para las guías de contribución.
+
+---
+
+## Licencia
+
+Este proyecto está bajo la licencia MIT. Ver [LICENSE](LICENSE) para más detalles.

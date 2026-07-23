@@ -66,3 +66,23 @@ class UserStatisticsResponse(BaseModel):
     total_categories_used: int
     total_expenses_count: int
     total_incomes_count: int
+
+
+class ChangePasswordRequest(BaseModel):
+    current_password: str = Field(..., min_length=8, max_length=128)
+    new_password: str = Field(..., min_length=8, max_length=128)
+
+
+class SessionHistoryItem(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: uuid.UUID
+    device: str | None
+    ip: str | None
+    is_revoked: bool
+    created_at: datetime
+    expires_at: datetime
+
+
+class SessionHistoryResponse(BaseModel):
+    data: list[SessionHistoryItem]

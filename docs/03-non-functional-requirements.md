@@ -194,7 +194,7 @@ iOS
 
 Tablet
 
-Web (futuro)
+Web
 
 ---
 
@@ -206,7 +206,6 @@ Español
 
 Inglés
 
-Portugués
 
 ---
 
