@@ -3,6 +3,7 @@ Use Case: CreateIncome (FR-019).
 
 Registra un ingreso personal nuevo.
 """
+
 import uuid
 
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -15,6 +16,11 @@ from app.schemas.personal_finance import CreateIncomeRequest
 
 
 class CreateIncomeUseCase:
+    """Use Case: CreateIncome (FR-019).
+
+    Registra un ingreso personal nuevo.
+    """
+
     def __init__(self, session: AsyncSession):
         self.session = session
         self.repository = PersonalIncomeRepository(session)
@@ -23,6 +29,18 @@ class CreateIncomeUseCase:
     async def execute(
         self, user_id: uuid.UUID, data: CreateIncomeRequest
     ) -> PersonalIncome:
+        """Crea un nuevo ingreso personal.
+
+        Args:
+            user_id: UUID del usuario propietario.
+            data: Datos del ingreso a crear (amount, description, category_id, etc.).
+
+        Returns:
+            El ingreso personal creado.
+
+        Raises:
+            ValidationException: Si la categoría especificada no existe.
+        """
         if data.category_id is not None:
             category = await self.category_repository.get_by_user_and_id(
                 user_id, data.category_id

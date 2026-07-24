@@ -3,6 +3,7 @@ Repository de Reminder.
 
 Encapsula las consultas de recordatorios.
 """
+
 import uuid
 
 from sqlalchemy import func, select
@@ -13,6 +14,11 @@ from app.repositories.base_repository import BaseRepository
 
 
 class ReminderRepository(BaseRepository[Reminder]):
+    """Repository para el modelo Reminder.
+
+    Encapsula las consultas de recordatorios personales del usuario.
+    """
+
     def __init__(self, session: AsyncSession):
         super().__init__(session, Reminder)
 
@@ -24,6 +30,17 @@ class ReminderRepository(BaseRepository[Reminder]):
         limit: int = 20,
         completed: bool | None = None,
     ) -> tuple[list[Reminder], int]:
+        """Lista recordatorios del usuario con filtros y paginación.
+
+        Args:
+            user_id: UUID del usuario propietario.
+            page: Número de página (comienza en 1).
+            limit: Cantidad máxima de resultados por página.
+            completed: Filtrar por estado de completado (True/False/None para todos).
+
+        Returns:
+            Tupla con la lista de recordatorios y el total de registros.
+        """
         base_filter = [
             Reminder.user_id == user_id,
             Reminder.deleted_at.is_(None),
@@ -32,11 +49,7 @@ class ReminderRepository(BaseRepository[Reminder]):
         if completed is not None:
             base_filter.append(Reminder.is_completed == completed)
 
-        count_stmt = (
-            select(func.count())
-            .select_from(Reminder)
-            .where(*base_filter)
-        )
+        count_stmt = select(func.count()).select_from(Reminder).where(*base_filter)
         total = (await self.session.execute(count_stmt)).scalar_one()
 
         stmt = (
@@ -54,6 +67,15 @@ class ReminderRepository(BaseRepository[Reminder]):
     async def get_by_user_and_id(
         self, user_id: uuid.UUID, reminder_id: uuid.UUID
     ) -> Reminder | None:
+        """Obtiene un recordatorio verificando que pertenezca al usuario.
+
+        Args:
+            user_id: UUID del usuario propietario.
+            reminder_id: UUID del recordatorio a buscar.
+
+        Returns:
+            El recordatorio encontrado o None si no existe o no pertenece al usuario.
+        """
         stmt = select(Reminder).where(
             Reminder.id == reminder_id,
             Reminder.user_id == user_id,

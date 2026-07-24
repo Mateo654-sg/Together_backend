@@ -3,6 +3,7 @@ Repository de AIHistory.
 
 Encapsula las consultas del historial de IA.
 """
+
 import uuid
 
 from sqlalchemy import func, select
@@ -13,6 +14,12 @@ from app.repositories.base_repository import BaseRepository
 
 
 class AIHistoryRepository(BaseRepository[AIHistory]):
+    """Repository para el modelo AIHistory.
+
+    Encapsula las consultas del historial de interacciones con la IA
+    financiera del usuario.
+    """
+
     def __init__(self, session: AsyncSession):
         super().__init__(session, AIHistory)
 
@@ -23,16 +30,22 @@ class AIHistoryRepository(BaseRepository[AIHistory]):
         page: int = 1,
         limit: int = 20,
     ) -> tuple[list[AIHistory], int]:
+        """Lista el historial de IA del usuario con paginación.
+
+        Args:
+            user_id: UUID del usuario propietario.
+            page: Número de página (comienza en 1).
+            limit: Cantidad máxima de resultados por página.
+
+        Returns:
+            Tupla con la lista de entradas del historial y el total de registros.
+        """
         base_filter = [
             AIHistory.user_id == user_id,
             AIHistory.deleted_at.is_(None),
         ]
 
-        count_stmt = (
-            select(func.count())
-            .select_from(AIHistory)
-            .where(*base_filter)
-        )
+        count_stmt = select(func.count()).select_from(AIHistory).where(*base_filter)
         total = (await self.session.execute(count_stmt)).scalar_one()
 
         stmt = (
@@ -50,6 +63,15 @@ class AIHistoryRepository(BaseRepository[AIHistory]):
     async def get_by_user_and_id(
         self, user_id: uuid.UUID, history_id: uuid.UUID
     ) -> AIHistory | None:
+        """Obtiene una entrada del historial de IA verificando que pertenezca al usuario.
+
+        Args:
+            user_id: UUID del usuario propietario.
+            history_id: UUID de la entrada del historial a buscar.
+
+        Returns:
+            La entrada encontrada o None si no existe o no pertenece al usuario.
+        """
         stmt = select(AIHistory).where(
             AIHistory.id == history_id,
             AIHistory.user_id == user_id,

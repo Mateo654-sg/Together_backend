@@ -4,21 +4,46 @@ Use Case: AcceptInvitation (FR-013).
 Al aceptar, se habilita el espacio compartido (FR-016): gastos
 compartidos, metas compartidas, dashboard conjunto, IA compartida.
 """
+
 import uuid
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.exceptions import ConflictException, NotFoundException, ValidationException
+from app.core.exceptions import (
+    ConflictException,
+    NotFoundException,
+    ValidationException,
+)
 from app.models.couple import Couple, CoupleStatus
 from app.repositories.couple_repository import CoupleRepository
 
 
 class AcceptInvitationUseCase:
+    """Use Case: AcceptInvitation (FR-013).
+
+    Al aceptar, se habilita el espacio compartido (FR-016): gastos
+    compartidos, metas compartidas, dashboard conjunto, IA compartida.
+    """
+
     def __init__(self, session: AsyncSession):
         self.session = session
         self.couple_repository = CoupleRepository(session)
 
     async def execute(self, user_id: uuid.UUID, invitation_code: str) -> Couple:
+        """Acepta una invitación de pareja y activa el espacio compartido.
+
+        Args:
+            user_id: UUID del usuario que acepta la invitación.
+            invitation_code: Código de invitación a aceptar.
+
+        Returns:
+            La relación de pareja activada.
+
+        Raises:
+            NotFoundException: Si el código de invitación no es válido.
+            ConflictException: Si la invitación ya fue usada o el usuario ya tiene pareja.
+            ValidationException: Si el usuario intenta aceptar su propia invitación.
+        """
         couple = await self.couple_repository.get_by_invitation_code(invitation_code)
         if couple is None:
             raise NotFoundException("Código de invitación no válido.")

@@ -3,6 +3,7 @@ Use Case: SendMessage (FR-118).
 
 Envía un mensaje en el chat de pareja.
 """
+
 import uuid
 
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -13,6 +14,11 @@ from app.schemas.chat import SendMessageRequest
 
 
 class SendMessageUseCase:
+    """Use Case: SendMessage (FR-118).
+
+    Envía un mensaje en el chat de pareja.
+    """
+
     def __init__(self, session: AsyncSession):
         self.session = session
         self.chat_repository = ChatMessageRepository(session)
@@ -20,6 +26,15 @@ class SendMessageUseCase:
     async def execute(
         self, sender_id: uuid.UUID, data: SendMessageRequest
     ) -> ChatMessage:
+        """Envía un mensaje de chat.
+
+        Args:
+            sender_id: UUID del usuario emisor.
+            data: Datos del mensaje (receiver_id, content, message_type, etc.).
+
+        Returns:
+            El mensaje de chat creado.
+        """
         try:
             message_type = MessageType(data.message_type)
         except ValueError:

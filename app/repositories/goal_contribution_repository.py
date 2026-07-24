@@ -3,6 +3,7 @@ Repository de GoalContribution (Tabla 13 — Documento 07).
 
 Encapsula las consultas de aportes a metas.
 """
+
 import uuid
 
 from sqlalchemy import func, select
@@ -13,6 +14,11 @@ from app.repositories.base_repository import BaseRepository
 
 
 class GoalContributionRepository(BaseRepository[GoalContribution]):
+    """Repository para el modelo GoalContribution.
+
+    Encapsula las consultas de aportes a metas compartidas.
+    """
+
     def __init__(self, session: AsyncSession):
         super().__init__(session, GoalContribution)
 
@@ -23,12 +29,20 @@ class GoalContributionRepository(BaseRepository[GoalContribution]):
         page: int = 1,
         limit: int = 20,
     ) -> tuple[list[GoalContribution], int]:
+        """Lista aportes a una meta específica con paginación.
+
+        Args:
+            goal_id: UUID de la meta.
+            page: Número de página (comienza en 1).
+            limit: Cantidad máxima de resultados por página.
+
+        Returns:
+            Tupla con la lista de aportes y el total de registros.
+        """
         base_filter = [GoalContribution.goal_id == goal_id]
 
         count_stmt = (
-            select(func.count())
-            .select_from(GoalContribution)
-            .where(*base_filter)
+            select(func.count()).select_from(GoalContribution).where(*base_filter)
         )
         total = (await self.session.execute(count_stmt)).scalar_one()
 
@@ -51,6 +65,18 @@ class GoalContributionRepository(BaseRepository[GoalContribution]):
         page: int = 1,
         limit: int = 20,
     ) -> tuple[list[GoalContribution], int]:
+        """Lista aportes de todas las metas de la pareja con paginación.
+
+        Hace JOIN con Goal para filtrar por couple_id.
+
+        Args:
+            couple_id: UUID de la pareja.
+            page: Número de página (comienza en 1).
+            limit: Cantidad máxima de resultados por página.
+
+        Returns:
+            Tupla con la lista de aportes y el total de registros.
+        """
         from app.models.goal import Goal
 
         base_filter = [
@@ -79,8 +105,16 @@ class GoalContributionRepository(BaseRepository[GoalContribution]):
         return items, total
 
     async def get_total_by_goal(self, goal_id: uuid.UUID) -> float:
-        stmt = select(
-            func.coalesce(func.sum(GoalContribution.amount), 0)
-        ).where(GoalContribution.goal_id == goal_id)
+        """Calcula el total aportado a una meta específica.
+
+        Args:
+            goal_id: UUID de la meta.
+
+        Returns:
+            Suma total de aportes como float.
+        """
+        stmt = select(func.coalesce(func.sum(GoalContribution.amount), 0)).where(
+            GoalContribution.goal_id == goal_id
+        )
         result = await self.session.execute(stmt)
         return float(result.scalar_one())

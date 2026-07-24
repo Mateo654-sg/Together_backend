@@ -4,6 +4,7 @@ Use Case: GetCoupleBalance (FR-051).
 Retorna el balance financiero entre la pareja: cuánto ha pagado
 cada uno y la diferencia.
 """
+
 import uuid
 
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -17,6 +18,12 @@ from app.schemas.shared_finance import CoupleBalanceResponse
 
 
 class GetCoupleBalanceUseCase:
+    """Use Case: GetCoupleBalance (FR-051).
+
+    Retorna el balance financiero entre la pareja: cuánto ha pagado
+    cada uno y la diferencia.
+    """
+
     def __init__(self, session: AsyncSession):
         self.session = session
         self.couple_repository = CoupleRepository(session)
@@ -24,6 +31,17 @@ class GetCoupleBalanceUseCase:
         self.income_repository = SharedIncomeRepository(session)
 
     async def execute(self, user_id: uuid.UUID) -> CoupleBalanceResponse:
+        """Calcula el balance financiero de la pareja.
+
+        Args:
+            user_id: UUID del usuario.
+
+        Returns:
+            CoupleBalanceResponse con totales pagados por cada partner y balance.
+
+        Raises:
+            ConflictException: Si el usuario no tiene pareja vinculada.
+        """
         couple = await self.couple_repository.get_active_for_user(user_id)
         if couple is None or couple.status != CoupleStatus.ACCEPTED:
             raise ConflictException("No tienes una pareja vinculada.")

@@ -9,12 +9,27 @@ de error definido en el Documento 08 — Backend API.
 
 
 class AppException(Exception):
-    """Excepción base de la aplicación."""
+    """Excepción base de la aplicación.
+
+    Todas las excepciones de dominio heredan de esta clase.
+    El manejador global en app/main.py las traduce al formato oficial:
+    {"success": false, "message": "...", "errors": []}
+
+    Attributes:
+        status_code: Código HTTP de respuesta (por defecto 400).
+        message: Mensaje legible para el usuario final.
+    """
 
     status_code: int = 400
     message: str = "Ocurrió un error inesperado."
 
     def __init__(self, message: str | None = None, status_code: int | None = None):
+        """Inicializa la excepción con mensaje y código de estado personalizados.
+
+        Args:
+            message: Mensaje de error opcional. Si no se provee, usa el default de la clase.
+            status_code: Código HTTP opcional. Si no se provee, usa el default de la clase.
+        """
         self.message = message or self.message
         self.status_code = status_code or self.status_code
         super().__init__(self.message)

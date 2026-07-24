@@ -3,6 +3,7 @@ Use Case: ListNotifications (FR-134).
 
 Lista las notificaciones del usuario.
 """
+
 import uuid
 
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -12,6 +13,11 @@ from app.schemas.notification import NotificationListResponse, NotificationRespo
 
 
 class ListNotificationsUseCase:
+    """Use Case: ListNotifications (FR-134).
+
+    Lista las notificaciones del usuario con paginación y conteo de no leídas.
+    """
+
     def __init__(self, session: AsyncSession):
         self.session = session
         self.notification_repository = NotificationRepository(session)
@@ -24,6 +30,17 @@ class ListNotificationsUseCase:
         limit: int = 20,
         unread_only: bool = False,
     ) -> NotificationListResponse:
+        """Lista notificaciones del usuario.
+
+        Args:
+            user_id: UUID del usuario propietario.
+            page: Número de página.
+            limit: Cantidad máxima de resultados.
+            unread_only: Si True, solo muestra no leídas.
+
+        Returns:
+            NotificationListResponse con notificaciones, unread_count y paginación.
+        """
         notifications, total = await self.notification_repository.list_by_user(
             user_id, page=page, limit=limit, unread_only=unread_only
         )

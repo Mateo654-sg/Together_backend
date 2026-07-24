@@ -3,6 +3,7 @@ Servicio principal de IA.
 
 Orquesta las consultas de IA a través del AI Gateway.
 """
+
 import time
 import uuid
 
@@ -16,7 +17,11 @@ from app.services.ai.mock_provider import MockAIProvider
 
 
 class AIService:
-    """Servicio principal de IA con AI Gateway."""
+    """Servicio principal de IA con AI Gateway.
+
+    Orquesta las consultas al proveedor de IA, construye contexto,
+    registra historial y gestiona feedback del usuario.
+    """
 
     def __init__(self, session: AsyncSession, provider: AIProvider | None = None):
         self.session = session
@@ -27,6 +32,16 @@ class AIService:
     async def chat(
         self, user_id: uuid.UUID, question: str, endpoint: str = "chat"
     ) -> dict:
+        """Envía una consulta al proveedor de IA y registra la interacción.
+
+        Args:
+            user_id: UUID del usuario que realiza la consulta.
+            question: Pregunta o prompt del usuario.
+            endpoint: Nombre del endpoint que origina la consulta.
+
+        Returns:
+            Diccionario con 'answer', 'tokens_used' y 'provider'.
+        """
         context = await self.context_builder.build_context(user_id)
 
         start_time = time.time()
@@ -50,7 +65,8 @@ class AIService:
 
         return {
             "answer": result["answer"],
-            "tokens_used": result.get("tokens_input", 0) + result.get("tokens_output", 0),
+            "tokens_used": result.get("tokens_input", 0)
+            + result.get("tokens_output", 0),
             "provider": self.provider.name,
         }
 

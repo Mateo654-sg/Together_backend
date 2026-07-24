@@ -4,6 +4,7 @@ Use Case: GetCoupleStatus (FR-015).
 Retorna el estado de la relación del usuario: sin pareja, pendiente
 o vinculada, junto con la información del compañero cuando aplique.
 """
+
 import uuid
 
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -17,11 +18,25 @@ from app.schemas.user import UserResponse
 
 
 class GetCoupleStatusUseCase:
+    """Use Case: GetCoupleStatus (FR-015).
+
+    Retorna el estado de la relación del usuario: sin pareja, pendiente
+    o vinculada, junto con la información del compañero cuando aplique.
+    """
+
     def __init__(self, session: AsyncSession):
         self.couple_repository = CoupleRepository(session)
         self.user_repository = UserRepository(session)
 
     async def execute(self, user_id: uuid.UUID) -> CoupleStatusResponse:
+        """Obtiene el estado de la relación de pareja del usuario.
+
+        Args:
+            user_id: UUID del usuario.
+
+        Returns:
+            CoupleStatusResponse con el estado, datos de la pareja y del partner.
+        """
         couple = await self.couple_repository.get_active_for_user(user_id)
 
         if couple is None:

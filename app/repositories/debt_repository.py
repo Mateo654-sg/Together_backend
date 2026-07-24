@@ -3,6 +3,7 @@ Repository de Debt (Tabla 10 — Documento 07).
 
 Encapsula las consultas de deudas entre pareja.
 """
+
 import uuid
 from decimal import Decimal
 
@@ -14,11 +15,24 @@ from app.repositories.base_repository import BaseRepository
 
 
 class DebtRepository(BaseRepository[Debt]):
+    """Repository para el modelo Debt.
+
+    Encapsula las consultas de deudas entre pareja.
+    Las deudas se generan automáticamente al crear gastos compartidos.
+    """
+
     def __init__(self, session: AsyncSession):
         super().__init__(session, Debt)
 
     async def list_pending_for_user(self, user_id: uuid.UUID) -> list[Debt]:
-        """Deudas pendientes donde el usuario es deudor."""
+        """Lista deudas pendientes donde el usuario es deudor.
+
+        Args:
+            user_id: UUID del usuario deudor.
+
+        Returns:
+            Lista de deudas pendientes ordenadas por fecha de creación (más recientes primero).
+        """
         stmt = (
             select(Debt)
             .where(
@@ -32,7 +46,16 @@ class DebtRepository(BaseRepository[Debt]):
         return list(result.scalars().all())
 
     async def list_for_couple(self, couple_id: uuid.UUID) -> list[Debt]:
-        """Todas las deudas de una pareja (para historial)."""
+        """Lista todas las deudas de una pareja (historial completo).
+
+        Hace JOIN con SharedExpense para filtrar por couple_id.
+
+        Args:
+            couple_id: UUID de la pareja.
+
+        Returns:
+            Lista de todas las deudas de la pareja ordenadas por fecha.
+        """
         from app.models.shared_expense import SharedExpense
 
         stmt = (
@@ -50,6 +73,15 @@ class DebtRepository(BaseRepository[Debt]):
     async def get_pending_by_debtor_creditor(
         self, debtor_id: uuid.UUID, creditor_id: uuid.UUID
     ) -> list[Debt]:
+        """Lista deudas pendientes entre un deudor y un acreedor específicos.
+
+        Args:
+            debtor_id: UUID del deudor.
+            creditor_id: UUID del acreedor.
+
+        Returns:
+            Lista de deudas pendientes entre ambos.
+        """
         stmt = select(Debt).where(
             Debt.debtor_id == debtor_id,
             Debt.creditor_id == creditor_id,
@@ -62,7 +94,15 @@ class DebtRepository(BaseRepository[Debt]):
     async def get_total_owed_to_user(
         self, user_id: uuid.UUID, *, pending_only: bool = True
     ) -> Decimal:
-        """Cuánto le deben al usuario (como acreedor)."""
+        """Calcula cuánto le deben al usuario (como acreedor).
+
+        Args:
+            user_id: UUID del usuario acreedor.
+            pending_only: Si True, solo suma deudas pendientes.
+
+        Returns:
+            Total adeudado al usuario como Decimal.
+        """
         filters = [
             Debt.creditor_id == user_id,
             Debt.deleted_at.is_(None),
@@ -79,7 +119,15 @@ class DebtRepository(BaseRepository[Debt]):
     async def get_total_user_owes(
         self, user_id: uuid.UUID, *, pending_only: bool = True
     ) -> Decimal:
-        """Cuánto debe el usuario (como deudor)."""
+        """Calcula cuánto debe el usuario (como deudor).
+
+        Args:
+            user_id: UUID del usuario deudor.
+            pending_only: Si True, solo suma deudas pendientes.
+
+        Returns:
+            Total que debe el usuario como Decimal.
+        """
         filters = [
             Debt.debtor_id == user_id,
             Debt.deleted_at.is_(None),

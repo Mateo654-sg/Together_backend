@@ -3,6 +3,7 @@ Use Case: UpdateExpense (FR-022).
 
 Edita un gasto personal existente.
 """
+
 import uuid
 
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -15,6 +16,11 @@ from app.schemas.personal_finance import UpdateExpenseRequest
 
 
 class UpdateExpenseUseCase:
+    """Use Case: UpdateExpense (FR-022).
+
+    Edita un gasto personal existente.
+    """
+
     def __init__(self, session: AsyncSession):
         self.session = session
         self.repository = PersonalExpenseRepository(session)
@@ -23,6 +29,20 @@ class UpdateExpenseUseCase:
     async def execute(
         self, user_id: uuid.UUID, expense_id: uuid.UUID, data: UpdateExpenseRequest
     ) -> PersonalExpense:
+        """Actualiza un gasto personal existente.
+
+        Args:
+            user_id: UUID del usuario propietario.
+            expense_id: UUID del gasto a actualizar.
+            data: Datos a actualizar (parciales).
+
+        Returns:
+            El gasto personal actualizado.
+
+        Raises:
+            NotFoundException: Si el gasto no existe.
+            ValidationException: Si la categoría especificada no existe.
+        """
         expense = await self.repository.get_by_user_and_id(user_id, expense_id)
         if expense is None:
             raise NotFoundException("Gasto no encontrado.")

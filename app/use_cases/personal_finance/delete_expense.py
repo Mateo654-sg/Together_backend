@@ -3,6 +3,7 @@ Use Case: DeleteExpense (FR-023).
 
 Elimina lógicamente (soft delete) un gasto personal.
 """
+
 import uuid
 
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -12,11 +13,25 @@ from app.repositories.personal_expense_repository import PersonalExpenseReposito
 
 
 class DeleteExpenseUseCase:
+    """Use Case: DeleteExpense (FR-023).
+
+    Elimina lógicamente (soft delete) un gasto personal.
+    """
+
     def __init__(self, session: AsyncSession):
         self.session = session
         self.repository = PersonalExpenseRepository(session)
 
     async def execute(self, user_id: uuid.UUID, expense_id: uuid.UUID) -> None:
+        """Elimina lógicamente un gasto personal.
+
+        Args:
+            user_id: UUID del usuario propietario.
+            expense_id: UUID del gasto a eliminar.
+
+        Raises:
+            NotFoundException: Si el gasto no existe.
+        """
         expense = await self.repository.get_by_user_and_id(user_id, expense_id)
         if expense is None:
             raise NotFoundException("Gasto no encontrado.")

@@ -3,11 +3,16 @@ Use Case: ContributeToGoal (FR-067, FR-068, FR-069).
 
 Registra un aporte o retiro a una meta y actualiza el progreso automáticamente.
 """
+
 import uuid
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.exceptions import ConflictException, NotFoundException, ValidationException
+from app.core.exceptions import (
+    ConflictException,
+    NotFoundException,
+    ValidationException,
+)
 from app.models.couple import CoupleStatus
 from app.models.goal import GoalStatus
 from app.models.goal_contribution import GoalContribution
@@ -18,6 +23,11 @@ from app.schemas.goal import CreateContributionRequest
 
 
 class ContributeToGoalUseCase:
+    """Use Case: ContributeToGoal (FR-067, FR-068, FR-069).
+
+    Registra un aporte o retiro a una meta y actualiza el progreso automáticamente.
+    """
+
     def __init__(self, session: AsyncSession):
         self.session = session
         self.goal_repository = GoalRepository(session)
@@ -27,6 +37,20 @@ class ContributeToGoalUseCase:
     async def execute(
         self, user_id: uuid.UUID, data: CreateContributionRequest
     ) -> GoalContribution:
+        """Registra un aporte a una meta y actualiza su progreso.
+
+        Args:
+            user_id: UUID del usuario que aporta.
+            data: Datos del aporte (goal_id, amount).
+
+        Returns:
+            El aporte registrado.
+
+        Raises:
+            ConflictException: Si el usuario no tiene pareja vinculada.
+            NotFoundException: Si la meta no existe.
+            ValidationException: Si la meta no está activa.
+        """
         couple = await self.couple_repository.get_active_for_user(user_id)
         if couple is None or couple.status != CoupleStatus.ACCEPTED:
             raise ConflictException("No tienes una pareja vinculada.")
@@ -36,7 +60,9 @@ class ContributeToGoalUseCase:
             raise NotFoundException("Meta no encontrada.")
 
         if goal.status != GoalStatus.ACTIVE:
-            raise ValidationException("Solo se pueden realizar aportes a metas activas.")
+            raise ValidationException(
+                "Solo se pueden realizar aportes a metas activas."
+            )
 
         contribution = GoalContribution(
             goal_id=goal.id,

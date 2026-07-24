@@ -3,6 +3,7 @@ Use Case: DeleteIncome (FR-023).
 
 Elimina lógicamente (soft delete) un ingreso personal.
 """
+
 import uuid
 
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -12,11 +13,25 @@ from app.repositories.personal_income_repository import PersonalIncomeRepository
 
 
 class DeleteIncomeUseCase:
+    """Use Case: DeleteIncome (FR-023).
+
+    Elimina lógicamente (soft delete) un ingreso personal.
+    """
+
     def __init__(self, session: AsyncSession):
         self.session = session
         self.repository = PersonalIncomeRepository(session)
 
     async def execute(self, user_id: uuid.UUID, income_id: uuid.UUID) -> None:
+        """Elimina lógicamente un ingreso personal.
+
+        Args:
+            user_id: UUID del usuario propietario.
+            income_id: UUID del ingreso a eliminar.
+
+        Raises:
+            NotFoundException: Si el ingreso no existe.
+        """
         income = await self.repository.get_by_user_and_id(user_id, income_id)
         if income is None:
             raise NotFoundException("Ingreso no encontrado.")

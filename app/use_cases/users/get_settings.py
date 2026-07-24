@@ -4,6 +4,7 @@ Use Case: GetSettings (FR-127, FR-128, FR-129).
 Retorna la configuración del usuario. Si no existe, crea una
 con los valores por defecto.
 """
+
 import uuid
 
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -13,14 +14,32 @@ from app.repositories.user_repository import UserRepository
 
 
 class GetSettingsUseCase:
+    """Use Case: GetSettings (FR-127, FR-128, FR-129).
+
+    Retorna la configuración del usuario. Si no existe, crea una
+    con los valores por defecto.
+    """
+
     def __init__(self, session: AsyncSession):
         self.session = session
         self.user_repository = UserRepository(session)
 
     async def execute(self, user_id: uuid.UUID) -> UserSettings:
+        """Obtiene la configuración del usuario.
+
+        Args:
+            user_id: UUID del usuario.
+
+        Returns:
+            UserSettings con la configuración actual.
+
+        Raises:
+            NotFoundException: Si el usuario no existe.
+        """
         user = await self.user_repository.get_by_id(user_id)
         if user is None:
             from app.core.exceptions import NotFoundException
+
             raise NotFoundException("Usuario no encontrado.")
 
         if user.settings is None:

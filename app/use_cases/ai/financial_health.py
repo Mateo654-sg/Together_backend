@@ -3,6 +3,7 @@ Use Case: AIFinancialHealth.
 
 Evalúa la salud financiera del usuario.
 """
+
 import uuid
 
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -14,6 +15,12 @@ from app.services.ai.service import AIService
 
 
 class AIFinancialHealthUseCase:
+    """Use Case: AIFinancialHealth.
+
+    Evalúa la salud financiera del usuario con score (0-100),
+    indicadores y recomendaciones personalizadas.
+    """
+
     def __init__(self, session: AsyncSession):
         self.session = session
         self.ai_service = AIService(session)
@@ -21,6 +28,14 @@ class AIFinancialHealthUseCase:
         self.income_repo = PersonalIncomeRepository(session)
 
     async def execute(self, user_id: uuid.UUID) -> AIFinancialHealthResponse:
+        """Evalúa la salud financiera del usuario.
+
+        Args:
+            user_id: UUID del usuario.
+
+        Returns:
+            AIFinancialHealthResponse con status, score, indicators y recommendations.
+        """
         total_income = await self.income_repo.get_total_by_user(user_id)
         expenses, _ = await self.expense_repo.list_by_user(user_id, page=1, limit=1000)
         total_expense = sum(e.amount for e in expenses)
@@ -44,17 +59,25 @@ class AIFinancialHealthUseCase:
         indicators = {
             "liquidity": float(balance),
             "savings_rate": savings_rate,
-            "expense_ratio": float(total_expense / total_income * 100) if total_income > 0 else 100,
+            "expense_ratio": float(total_expense / total_income * 100)
+            if total_income > 0
+            else 100,
             "stability": "Stable" if total_income > 0 else "No income",
         }
 
         recommendations = []
         if savings_rate < 20:
-            recommendations.append("Tu tasa de ahorro es baja. Intenta reducir gastos hormiga.")
+            recommendations.append(
+                "Tu tasa de ahorro es baja. Intenta reducir gastos hormiga."
+            )
         if total_expense > total_income and total_income > 0:
-            recommendations.append("Estás gastando más de lo que ingresas. Revisa tus gastos fijos.")
+            recommendations.append(
+                "Estás gastando más de lo que ingresas. Revisa tus gastos fijos."
+            )
         if not recommendations:
-            recommendations.append("Tu salud financiera es buena. Mantén tus hábitos actuales.")
+            recommendations.append(
+                "Tu salud financiera es buena. Mantén tus hábitos actuales."
+            )
 
         return AIFinancialHealthResponse(
             status=status,

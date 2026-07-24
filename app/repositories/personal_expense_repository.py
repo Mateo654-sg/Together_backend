@@ -4,6 +4,7 @@ Repository de PersonalExpense (Tabla 5 — Documento 07).
 Encapsula las consultas de gastos personales con soporte para
 filtros, búsqueda y paginación (FR-036, FR-037, FR-038).
 """
+
 import uuid
 from datetime import date
 from decimal import Decimal
@@ -16,6 +17,12 @@ from app.repositories.base_repository import BaseRepository
 
 
 class PersonalExpenseRepository(BaseRepository[PersonalExpense]):
+    """Repository para el modelo PersonalExpense.
+
+    Encapsula las consultas de gastos personales con soporte para
+    filtros, búsqueda, ordenamiento y paginación (FR-036, FR-037, FR-038).
+    """
+
     def __init__(self, session: AsyncSession):
         super().__init__(session, PersonalExpense)
 
@@ -34,6 +41,24 @@ class PersonalExpenseRepository(BaseRepository[PersonalExpense]):
         sort_by: str = "expense_date",
         sort_order: str = "desc",
     ) -> tuple[list[PersonalExpense], int]:
+        """Lista gastos personales con filtros, búsqueda, ordenamiento y paginación.
+
+        Args:
+            user_id: UUID del usuario propietario de los gastos.
+            page: Número de página (comienza en 1).
+            limit: Cantidad máxima de resultados por página.
+            category_id: Filtrar por categoría específica.
+            date_from: Fecha de inicio del rango (inclusive).
+            date_to: Fecha de fin del rango (inclusive).
+            min_amount: Monto mínimo del gasto.
+            max_amount: Monto máximo del gasto.
+            search: Texto de búsqueda en la descripción (case-insensitive).
+            sort_by: Campo por el cual ordenar (por defecto expense_date).
+            sort_order: Dirección del ordenamiento (asc o desc).
+
+        Returns:
+            Tupla con la lista de gastos y el total de registros que coinciden.
+        """
         base_filter = [
             PersonalExpense.user_id == user_id,
             PersonalExpense.deleted_at.is_(None),
@@ -50,24 +75,19 @@ class PersonalExpenseRepository(BaseRepository[PersonalExpense]):
         if max_amount is not None:
             base_filter.append(PersonalExpense.amount <= max_amount)
         if search:
-            base_filter.append(
-                PersonalExpense.description.ilike(f"%{search}%")
-            )
+            base_filter.append(PersonalExpense.description.ilike(f"%{search}%"))
 
-        # Count
-        count_stmt = select(func.count()).select_from(PersonalExpense).where(
-            *base_filter
+        count_stmt = (
+            select(func.count()).select_from(PersonalExpense).where(*base_filter)
         )
         total = (await self.session.execute(count_stmt)).scalar_one()
 
-        # Sort
         sort_column = getattr(PersonalExpense, sort_by, PersonalExpense.expense_date)
         if sort_order == "asc":
             order = sort_column.asc()
         else:
             order = sort_column.desc()
 
-        # Paginate
         stmt = (
             select(PersonalExpense)
             .where(*base_filter)
@@ -83,6 +103,15 @@ class PersonalExpenseRepository(BaseRepository[PersonalExpense]):
     async def get_by_user_and_id(
         self, user_id: uuid.UUID, expense_id: uuid.UUID
     ) -> PersonalExpense | None:
+        """Obtiene un gasto específico verificando que pertenezca al usuario.
+
+        Args:
+            user_id: UUID del usuario propietario.
+            expense_id: UUID del gasto a buscar.
+
+        Returns:
+            El gasto encontrado o None si no existe o no pertenece al usuario.
+        """
         stmt = select(PersonalExpense).where(
             PersonalExpense.id == expense_id,
             PersonalExpense.user_id == user_id,
@@ -92,20 +121,25 @@ class PersonalExpenseRepository(BaseRepository[PersonalExpense]):
         return result.scalar_one_or_none()
 
     async def get_balance(self, user_id: uuid.UUID) -> Decimal:
-        """FR-040: Consultar saldo personal (ingresos - gastos)."""
+        """Calcula el saldo personal del usuario (ingresos - gastos).
+
+        FR-040: Consultar saldo personal.
+
+        Args:
+            user_id: UUID del usuario.
+
+        Returns:
+            Saldo actual como Decimal (puede ser negativo).
+        """
         from app.models.personal_income import PersonalIncome
 
-        income_stmt = select(
-            func.coalesce(func.sum(PersonalIncome.amount), 0)
-        ).where(
+        income_stmt = select(func.coalesce(func.sum(PersonalIncome.amount), 0)).where(
             PersonalIncome.user_id == user_id,
             PersonalIncome.deleted_at.is_(None),
         )
         total_income = (await self.session.execute(income_stmt)).scalar_one()
 
-        expense_stmt = select(
-            func.coalesce(func.sum(PersonalExpense.amount), 0)
-        ).where(
+        expense_stmt = select(func.coalesce(func.sum(PersonalExpense.amount), 0)).where(
             PersonalExpense.user_id == user_id,
             PersonalExpense.deleted_at.is_(None),
         )

@@ -4,6 +4,7 @@ Use Case: GetUserStatistics.
 Retorna estadísticas personales del usuario: total ingresos,
 gastos, saldo, categorías más usadas, etc.
 """
+
 import uuid
 from dataclasses import dataclass
 
@@ -26,6 +27,12 @@ class UserStatistics:
 
 
 class GetUserStatisticsUseCase:
+    """Use Case: GetUserStatistics.
+
+    Retorna estadísticas personales del usuario: total ingresos,
+    gastos, saldo, categorías más usadas, etc.
+    """
+
     def __init__(self, session: AsyncSession):
         self.session = session
         self.user_repository = UserRepository(session)
@@ -33,6 +40,17 @@ class GetUserStatisticsUseCase:
         self.income_repository = PersonalIncomeRepository(session)
 
     async def execute(self, user_id: uuid.UUID) -> UserStatistics:
+        """Calcula estadísticas personales del usuario.
+
+        Args:
+            user_id: UUID del usuario.
+
+        Returns:
+            UserStatistics con totales y conteos.
+
+        Raises:
+            NotFoundException: Si el usuario no existe.
+        """
         user = await self.user_repository.get_by_id(user_id)
         if user is None:
             raise NotFoundException("Usuario no encontrado.")
@@ -73,17 +91,15 @@ class GetUserStatisticsUseCase:
         from app.models.personal_expense import PersonalExpense as PE
         from app.models.personal_income import PersonalIncome as PI
 
-        cat_stmt = select(
-            func.count(
-                func.distinct(
-                    func.coalesce(PE.category_id, PI.category_id)
-                )
+        cat_stmt = (
+            select(
+                func.count(func.distinct(func.coalesce(PE.category_id, PI.category_id)))
             )
-        ).select_from(
-            PE.__table__.outerjoin(PI.__table__, PE.user_id == PI.user_id)
-        ).where(
-            PE.user_id == user_id,
-            PE.deleted_at.is_(None),
+            .select_from(PE.__table__.outerjoin(PI.__table__, PE.user_id == PI.user_id))
+            .where(
+                PE.user_id == user_id,
+                PE.deleted_at.is_(None),
+            )
         )
         total_categories = (await self.session.execute(cat_stmt)).scalar_one()
 

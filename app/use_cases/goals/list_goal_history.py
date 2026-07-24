@@ -3,6 +3,7 @@ Use Case: ListGoalHistory.
 
 Lista el historial de aportes de la pareja.
 """
+
 import uuid
 
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -15,6 +16,11 @@ from app.schemas.goal import ContributionListResponse, ContributionResponse
 
 
 class ListGoalHistoryUseCase:
+    """Use Case: ListGoalHistory.
+
+    Lista el historial de aportes de la pareja.
+    """
+
     def __init__(self, session: AsyncSession):
         self.session = session
         self.contribution_repository = GoalContributionRepository(session)
@@ -27,6 +33,19 @@ class ListGoalHistoryUseCase:
         page: int = 1,
         limit: int = 20,
     ) -> ContributionListResponse:
+        """Lista el historial de aportes a metas de la pareja.
+
+        Args:
+            user_id: UUID del usuario.
+            page: Número de página.
+            limit: Cantidad máxima de resultados.
+
+        Returns:
+            ContributionListResponse con los aportes y paginación.
+
+        Raises:
+            ConflictException: Si el usuario no tiene pareja vinculada.
+        """
         couple = await self.couple_repository.get_active_for_user(user_id)
         if couple is None or couple.status != CoupleStatus.ACCEPTED:
             raise ConflictException("No tienes una pareja vinculada.")

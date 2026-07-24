@@ -3,6 +3,7 @@ Use Case: UpdateBudget (FR-073 a FR-076).
 
 Edita un presupuesto existente.
 """
+
 import uuid
 
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -14,6 +15,11 @@ from app.schemas.budget import UpdateBudgetRequest
 
 
 class UpdateBudgetUseCase:
+    """Use Case: UpdateBudget (FR-073 a FR-076).
+
+    Edita un presupuesto existente.
+    """
+
     def __init__(self, session: AsyncSession):
         self.session = session
         self.budget_repository = BudgetRepository(session)
@@ -22,6 +28,20 @@ class UpdateBudgetUseCase:
     async def execute(
         self, user_id: uuid.UUID, budget_id: uuid.UUID, data: UpdateBudgetRequest
     ):
+        """Actualiza un presupuesto existente.
+
+        Args:
+            user_id: UUID del usuario propietario.
+            budget_id: UUID del presupuesto a actualizar.
+            data: Datos a actualizar (parciales).
+
+        Returns:
+            El presupuesto actualizado.
+
+        Raises:
+            NotFoundException: Si el presupuesto no existe.
+            ValidationException: Si la categoría no existe.
+        """
         budget = await self.budget_repository.get_by_user_and_id(user_id, budget_id)
         if budget is None:
             raise NotFoundException("Presupuesto no encontrado.")

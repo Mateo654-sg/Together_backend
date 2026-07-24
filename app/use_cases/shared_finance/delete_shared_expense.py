@@ -3,6 +3,7 @@ Use Case: DeleteSharedExpense (FR-054).
 
 Elimina lógicamente un gasto compartido y cancela la deuda asociada.
 """
+
 import uuid
 
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -16,6 +17,11 @@ from app.repositories.shared_expense_repository import SharedExpenseRepository
 
 
 class DeleteSharedExpenseUseCase:
+    """Use Case: DeleteSharedExpense (FR-054).
+
+    Elimina lógicamente un gasto compartido y cancela la deuda asociada.
+    """
+
     def __init__(self, session: AsyncSession):
         self.session = session
         self.expense_repository = SharedExpenseRepository(session)
@@ -23,6 +29,16 @@ class DeleteSharedExpenseUseCase:
         self.couple_repository = CoupleRepository(session)
 
     async def execute(self, user_id: uuid.UUID, expense_id: uuid.UUID) -> None:
+        """Elimina lógicamente un gasto compartido y cancela sus deudas pendientes.
+
+        Args:
+            user_id: UUID del usuario que solicita la eliminación.
+            expense_id: UUID del gasto a eliminar.
+
+        Raises:
+            ConflictException: Si el usuario no tiene pareja vinculada.
+            NotFoundException: Si el gasto no existe.
+        """
         couple = await self.couple_repository.get_active_for_user(user_id)
         if couple is None or couple.status != CoupleStatus.ACCEPTED:
             raise ConflictException("No tienes una pareja vinculada.")

@@ -3,6 +3,7 @@ Use Case: CreateBudget (FR-073, FR-074, FR-075, FR-076).
 
 Crea un nuevo presupuesto para el usuario.
 """
+
 import uuid
 
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -15,12 +16,30 @@ from app.schemas.budget import CreateBudgetRequest
 
 
 class CreateBudgetUseCase:
+    """Use Case: CreateBudget (FR-073, FR-074, FR-075, FR-076).
+
+    Crea un nuevo presupuesto para el usuario.
+    """
+
     def __init__(self, session: AsyncSession):
         self.session = session
         self.budget_repository = BudgetRepository(session)
         self.category_repository = PersonalCategoryRepository(session)
 
     async def execute(self, user_id: uuid.UUID, data: CreateBudgetRequest) -> Budget:
+        """Crea un nuevo presupuesto personal.
+
+        Args:
+            user_id: UUID del usuario propietario.
+            data: Datos del presupuesto (category_id, amount, month, year).
+
+        Returns:
+            El presupuesto creado.
+
+        Raises:
+            ValidationException: Si la categoría no existe.
+            ConflictException: Si ya existe un presupuesto para esa categoría en el período.
+        """
         if data.category_id is not None:
             category = await self.category_repository.get_by_user_and_id(
                 user_id, data.category_id

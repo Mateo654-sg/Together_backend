@@ -3,6 +3,7 @@ Use Case: ListReports.
 
 Lista los reportes generados por el usuario.
 """
+
 import uuid
 
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -12,6 +13,11 @@ from app.schemas.report import ReportListResponse, ReportResponse
 
 
 class ListReportsUseCase:
+    """Use Case: ListReports.
+
+    Lista los reportes generados por el usuario con paginación.
+    """
+
     def __init__(self, session: AsyncSession):
         self.session = session
         self.report_repository = ReportRepository(session)
@@ -23,6 +29,16 @@ class ListReportsUseCase:
         page: int = 1,
         limit: int = 20,
     ) -> ReportListResponse:
+        """Lista reportes del usuario.
+
+        Args:
+            user_id: UUID del usuario propietario.
+            page: Número de página.
+            limit: Cantidad máxima de resultados.
+
+        Returns:
+            ReportListResponse con reportes y paginación.
+        """
         reports, total = await self.report_repository.list_by_user(
             user_id, page=page, limit=limit
         )

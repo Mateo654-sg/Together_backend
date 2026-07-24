@@ -3,6 +3,7 @@ Use Case: GetCoupleDashboard.
 
 Dashboard específico para parejas con datos compartidos.
 """
+
 import uuid
 from decimal import Decimal
 
@@ -26,6 +27,12 @@ from app.schemas.dashboard import (
 
 
 class GetCoupleDashboardUseCase:
+    """Use Case: GetCoupleDashboard.
+
+    Dashboard específico para parejas con datos compartidos,
+    incluyendo balance personal y compartido, metas y recomendaciones.
+    """
+
     def __init__(self, session: AsyncSession):
         self.session = session
         self.personal_expense_repo = PersonalExpenseRepository(session)
@@ -36,6 +43,17 @@ class GetCoupleDashboardUseCase:
         self.goal_repository = GoalRepository(session)
 
     async def execute(self, user_id: uuid.UUID) -> CoupleDashboardResponse:
+        """Construye el dashboard de pareja.
+
+        Args:
+            user_id: UUID del usuario.
+
+        Returns:
+            CoupleDashboardResponse con balances personal/compartido, metas y recomendaciones.
+
+        Raises:
+            ConflictException: Si el usuario no tiene pareja vinculada.
+        """
         couple = await self.couple_repository.get_active_for_user(user_id)
         if couple is None or couple.status != CoupleStatus.ACCEPTED:
             raise ConflictException("No tienes una pareja vinculada.")
@@ -46,7 +64,9 @@ class GetCoupleDashboardUseCase:
         )
         personal_expense_total = sum(e.amount for e in personal_expenses)
 
-        shared_expenses_total = await self.shared_expense_repo.get_total_by_couple(couple.id)
+        shared_expenses_total = await self.shared_expense_repo.get_total_by_couple(
+            couple.id
+        )
         shared_income_total = Decimal("0")
         shared_incomes, _ = await self.shared_income_repo.list_by_couple(
             couple.id, page=1, limit=1000

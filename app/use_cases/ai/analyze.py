@@ -3,6 +3,7 @@ Use Case: AIAnalyze (FR-098, FR-099, FR-107).
 
 Detecta patrones, gastos anómalos y compara períodos.
 """
+
 import uuid
 
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -12,6 +13,12 @@ from app.services.ai.service import AIService
 
 
 class AIAnalyzeUseCase:
+    """Use Case: AIAnalyze (FR-098, FR-099, FR-107).
+
+    Detecta patrones, gastos anómalos y compara períodos
+    utilizando el servicio de IA financiera.
+    """
+
     def __init__(self, session: AsyncSession):
         self.session = session
         self.ai_service = AIService(session)
@@ -19,6 +26,15 @@ class AIAnalyzeUseCase:
     async def execute(
         self, user_id: uuid.UUID, data: AIAnalyzeRequest
     ) -> AIAnalyzeResponse:
+        """Ejecuta un análisis financiero con IA.
+
+        Args:
+            user_id: UUID del usuario.
+            data: Datos de la solicitud (analysis_type: patterns, anomalies, comparison, categories).
+
+        Returns:
+            AIAnalyzeResponse con el análisis y lista de insights.
+        """
         prompts = {
             "patterns": "Analiza mis patrones de gasto del último mes. ¿Qué categorías dominan? ¿Hay gastos repetitivos?",
             "anomalies": "Detecta gastos anómalos o inusuales en mis registros recientes.",
@@ -26,7 +42,9 @@ class AIAnalyzeUseCase:
             "categories": "Analiza la distribución de mis gastos por categoría.",
         }
 
-        question = prompts.get(data.analysis_type, f"Analiza mis finanzas: {data.analysis_type}")
+        question = prompts.get(
+            data.analysis_type, f"Analiza mis finanzas: {data.analysis_type}"
+        )
         result = await self.ai_service.chat(user_id, question, endpoint="analyze")
 
         insights = [

@@ -3,6 +3,7 @@ Use Case: GetPersonalStatistics (FR-092).
 
 Obtiene estadísticas personales del usuario.
 """
+
 import uuid
 from decimal import Decimal
 
@@ -15,25 +16,38 @@ from app.schemas.report import PersonalStatisticsResponse
 
 
 class GetPersonalStatisticsUseCase:
+    """Use Case: GetPersonalStatistics (FR-092).
+
+    Obtiene estadísticas personales acumuladas del usuario.
+    """
+
     def __init__(self, session: AsyncSession):
         self.session = session
 
     async def execute(self, user_id: uuid.UUID) -> PersonalStatisticsResponse:
-        income_stmt = select(
-            func.coalesce(func.sum(PersonalIncome.amount), 0)
-        ).where(
+        """Calcula estadísticas personales acumuladas.
+
+        Args:
+            user_id: UUID del usuario.
+
+        Returns:
+            PersonalStatisticsResponse con totales, balance y tasa de ahorro.
+        """
+        income_stmt = select(func.coalesce(func.sum(PersonalIncome.amount), 0)).where(
             PersonalIncome.user_id == user_id,
             PersonalIncome.deleted_at.is_(None),
         )
-        total_income = Decimal(str((await self.session.execute(income_stmt)).scalar_one()))
+        total_income = Decimal(
+            str((await self.session.execute(income_stmt)).scalar_one())
+        )
 
-        expense_stmt = select(
-            func.coalesce(func.sum(PersonalExpense.amount), 0)
-        ).where(
+        expense_stmt = select(func.coalesce(func.sum(PersonalExpense.amount), 0)).where(
             PersonalExpense.user_id == user_id,
             PersonalExpense.deleted_at.is_(None),
         )
-        total_expense = Decimal(str((await self.session.execute(expense_stmt)).scalar_one()))
+        total_expense = Decimal(
+            str((await self.session.execute(expense_stmt)).scalar_one())
+        )
 
         balance = total_income - total_expense
         savings_rate = float(balance / total_income * 100) if total_income > 0 else 0.0

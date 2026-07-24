@@ -3,6 +3,7 @@ Use Case: ListSharedExpenses.
 
 Lista gastos compartidos de la pareja con filtros y paginación.
 """
+
 import uuid
 from datetime import date
 
@@ -16,6 +17,11 @@ from app.schemas.shared_finance import SharedExpenseListResponse
 
 
 class ListSharedExpensesUseCase:
+    """Use Case: ListSharedExpenses.
+
+    Lista gastos compartidos de la pareja con filtros y paginación.
+    """
+
     def __init__(self, session: AsyncSession):
         self.session = session
         self.expense_repository = SharedExpenseRepository(session)
@@ -31,6 +37,22 @@ class ListSharedExpensesUseCase:
         date_from: date | None = None,
         date_to: date | None = None,
     ) -> SharedExpenseListResponse:
+        """Lista gastos compartidos de la pareja con filtros.
+
+        Args:
+            user_id: UUID del usuario.
+            page: Número de página.
+            limit: Cantidad máxima de resultados.
+            category_id: Filtrar por categoría.
+            date_from: Fecha de inicio del rango.
+            date_to: Fecha de fin del rango.
+
+        Returns:
+            SharedExpenseListResponse con los gastos y paginación.
+
+        Raises:
+            ConflictException: Si el usuario no tiene pareja vinculada.
+        """
         couple = await self.couple_repository.get_active_for_user(user_id)
         if couple is None or couple.status != CoupleStatus.ACCEPTED:
             raise ConflictException("No tienes una pareja vinculada.")

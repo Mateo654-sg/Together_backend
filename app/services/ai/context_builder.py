@@ -3,6 +3,7 @@ Constructor de contexto para la IA.
 
 Recopila información relevante del usuario para enviar al modelo.
 """
+
 import uuid
 
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -15,7 +16,11 @@ from app.repositories.personal_income_repository import PersonalIncomeRepository
 
 
 class AIContextBuilder:
-    """Construye contexto financiero para las consultas de IA."""
+    """Construye contexto financiero para las consultas de IA.
+
+    Recopila información relevante del usuario (ingresos, gastos,
+    metas, pareja) y la serializa como texto plano para el modelo.
+    """
 
     def __init__(self, session: AsyncSession):
         self.session = session
@@ -25,7 +30,17 @@ class AIContextBuilder:
         self.goal_repo = GoalRepository(session)
 
     async def build_context(self, user_id: uuid.UUID) -> str:
-        """Construye el contexto completo del usuario."""
+        """Construye el contexto completo del usuario como texto plano.
+
+        Incluye: ingresos totales, gastos totales, saldo, tasa de ahorro,
+        metas activas (si tiene pareja) y últimos gastos.
+
+        Args:
+            user_id: UUID del usuario.
+
+        Returns:
+            Texto con el contexto financiero del usuario.
+        """
         parts = []
 
         total_income = await self.income_repo.get_total_by_user(user_id)
@@ -48,7 +63,11 @@ class AIContextBuilder:
             if goals:
                 parts.append(f"Metas activas: {len(goals)}")
                 for goal in goals[:3]:
-                    progress = float(goal.current_amount / goal.target_amount * 100) if goal.target_amount > 0 else 0
+                    progress = (
+                        float(goal.current_amount / goal.target_amount * 100)
+                        if goal.target_amount > 0
+                        else 0
+                    )
                     parts.append(f"- {goal.title}: {progress:.0f}% completado")
 
         if expenses:

@@ -3,6 +3,7 @@ Use Case: DeleteCategory (FR-024 — eliminación de categoría).
 
 Elimina lógicamente (soft delete) una categoría personal.
 """
+
 import uuid
 
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -12,11 +13,25 @@ from app.repositories.personal_category_repository import PersonalCategoryReposi
 
 
 class DeleteCategoryUseCase:
+    """Use Case: DeleteCategory (FR-024 — eliminación de categoría).
+
+    Elimina lógicamente (soft delete) una categoría personal.
+    """
+
     def __init__(self, session: AsyncSession):
         self.session = session
         self.repository = PersonalCategoryRepository(session)
 
     async def execute(self, user_id: uuid.UUID, category_id: uuid.UUID) -> None:
+        """Elimina lógicamente una categoría personal.
+
+        Args:
+            user_id: UUID del usuario propietario.
+            category_id: UUID de la categoría a eliminar.
+
+        Raises:
+            NotFoundException: Si la categoría no existe.
+        """
         category = await self.repository.get_by_user_and_id(user_id, category_id)
         if category is None:
             raise NotFoundException("Categoría no encontrada.")

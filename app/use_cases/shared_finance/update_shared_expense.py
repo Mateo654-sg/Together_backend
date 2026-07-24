@@ -3,6 +3,7 @@ Use Case: UpdateSharedExpense (FR-053).
 
 Edita un gasto compartido existente.
 """
+
 from __future__ import annotations
 
 import uuid
@@ -10,7 +11,11 @@ from typing import TYPE_CHECKING
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.exceptions import ConflictException, NotFoundException, ValidationException
+from app.core.exceptions import (
+    ConflictException,
+    NotFoundException,
+    ValidationException,
+)
 from app.models.couple import CoupleStatus
 from app.repositories.couple_repository import CoupleRepository
 from app.repositories.shared_category_repository import SharedCategoryRepository
@@ -22,6 +27,11 @@ if TYPE_CHECKING:
 
 
 class UpdateSharedExpenseUseCase:
+    """Use Case: UpdateSharedExpense (FR-053).
+
+    Edita un gasto compartido existente.
+    """
+
     def __init__(self, session: AsyncSession):
         self.session = session
         self.expense_repository = SharedExpenseRepository(session)
@@ -29,8 +39,26 @@ class UpdateSharedExpenseUseCase:
         self.couple_repository = CoupleRepository(session)
 
     async def execute(
-        self, user_id: uuid.UUID, expense_id: uuid.UUID, data: UpdateSharedExpenseRequest
+        self,
+        user_id: uuid.UUID,
+        expense_id: uuid.UUID,
+        data: UpdateSharedExpenseRequest,
     ) -> "SharedExpense":
+        """Actualiza un gasto compartido existente.
+
+        Args:
+            user_id: UUID del usuario que paga el gasto.
+            expense_id: UUID del gasto a actualizar.
+            data: Datos a actualizar (parciales).
+
+        Returns:
+            El gasto compartido actualizado.
+
+        Raises:
+            ConflictException: Si el usuario no tiene pareja vinculada.
+            NotFoundException: Si el gasto no existe.
+            ValidationException: Si la categoría especificada no existe.
+        """
         couple = await self.couple_repository.get_active_for_user(user_id)
         if couple is None or couple.status != CoupleStatus.ACCEPTED:
             raise ConflictException("No tienes una pareja vinculada.")

@@ -3,6 +3,7 @@ Use Case: GetDashboard (FR-079 a FR-088).
 
 Agrega datos de todos los módulos para el dashboard principal.
 """
+
 import uuid
 from datetime import date
 from decimal import Decimal
@@ -26,6 +27,13 @@ from app.schemas.dashboard import (
 
 
 class GetDashboardUseCase:
+    """Use Case: GetDashboard (FR-079 a FR-088).
+
+    Agrega datos de todos los módulos para el dashboard principal:
+    balance, ingresos, gastos, metas recientes, actividad reciente,
+    pagos próximos y recomendaciones de IA.
+    """
+
     def __init__(self, session: AsyncSession):
         self.session = session
         self.personal_expense_repo = PersonalExpenseRepository(session)
@@ -36,6 +44,14 @@ class GetDashboardUseCase:
         self.goal_repository = GoalRepository(session)
 
     async def execute(self, user_id: uuid.UUID) -> DashboardResponse:
+        """Construye el dashboard principal del usuario.
+
+        Args:
+            user_id: UUID del usuario.
+
+        Returns:
+            DashboardResponse con balance, metas, actividad, pagos y recomendaciones.
+        """
         total_income = await self.personal_income_repo.get_total_by_user(user_id)
         total_expense = Decimal("0")
         expenses, _ = await self.personal_expense_repo.list_by_user(
@@ -79,7 +95,9 @@ class GetDashboardUseCase:
             "total_income": float(total_income),
             "total_expense": float(total_expense),
             "balance": float(balance),
-            "savings_rate": float(saving / total_income * 100) if total_income > 0 else 0.0,
+            "savings_rate": float(saving / total_income * 100)
+            if total_income > 0
+            else 0.0,
             "transaction_count": len(expenses),
         }
 

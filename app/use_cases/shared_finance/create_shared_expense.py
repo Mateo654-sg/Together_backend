@@ -4,6 +4,7 @@ Use Case: CreateSharedExpense (FR-041, FR-045, FR-047, FR-050).
 Registra un gasto compartido y genera la deuda automáticamente
 según el tipo de división (50/50, porcentaje, monto personalizado).
 """
+
 import json
 import uuid
 from decimal import Decimal
@@ -21,6 +22,12 @@ from app.schemas.shared_finance import CreateSharedExpenseRequest
 
 
 class CreateSharedExpenseUseCase:
+    """Use Case: CreateSharedExpense (FR-041, FR-045, FR-047, FR-050).
+
+    Registra un gasto compartido y genera la deuda automáticamente
+    según el tipo de división (50/50, porcentaje, monto personalizado).
+    """
+
     def __init__(self, session: AsyncSession):
         self.session = session
         self.expense_repository = SharedExpenseRepository(session)
@@ -31,6 +38,19 @@ class CreateSharedExpenseUseCase:
     async def execute(
         self, user_id: uuid.UUID, data: CreateSharedExpenseRequest
     ) -> SharedExpense:
+        """Crea un gasto compartido y genera la deuda correspondiente.
+
+        Args:
+            user_id: UUID del usuario que paga el gasto.
+            data: Datos del gasto compartido.
+
+        Returns:
+            El gasto compartido creado.
+
+        Raises:
+            ConflictException: Si el usuario no tiene pareja vinculada.
+            ValidationException: Si la categoría especificada no existe.
+        """
         from app.models.couple import CoupleStatus
 
         # Validate user has an active couple

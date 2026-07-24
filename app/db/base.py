@@ -15,12 +15,20 @@ from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 
 
 class Base(DeclarativeBase):
-    """Base declarativa para todos los modelos ORM."""
+    """Base declarativa para todos los modelos ORM.
+
+    Todos los modelos del proyecto heredan de esta clase para
+    garantizar una estructura consistente en la base de datos.
+    """
     pass
 
 
 class UUIDMixin:
-    """Mixin que agrega una llave primaria UUID."""
+    """Mixin que agrega una llave primaria UUID v4.
+
+    Todas las tablas del proyecto usan UUID como PK (Documento 07).
+    El valor se genera automáticamente al crear la instancia.
+    """
 
     id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
@@ -28,7 +36,17 @@ class UUIDMixin:
 
 
 class TimestampMixin:
-    """Mixin de auditoría temporal con Soft Delete."""
+    """Mixin de auditoría temporal con Soft Delete.
+
+    Agrega created_at, updated_at y deleted_at a la tabla.
+    Nunca se realiza DELETE físico: solo se marca deleted_at
+    (NFR-018: Soft Delete en todas las tablas).
+
+    Attributes:
+        created_at: Fecha y hora de creación del registro.
+        updated_at: Fecha y hora de última actualización.
+        deleted_at: Fecha y hora de eliminación lógica (None si está activo).
+    """
 
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), nullable=False
@@ -45,4 +63,5 @@ class TimestampMixin:
 
     @property
     def is_deleted(self) -> bool:
+        """Retorna True si el registro ha sido eliminado lógicamente."""
         return self.deleted_at is not None

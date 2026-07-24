@@ -3,6 +3,7 @@ Use Case: UpdateReminder (FR-110).
 
 Edita un recordatorio existente.
 """
+
 import uuid
 
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -14,6 +15,11 @@ from app.schemas.reminder import UpdateReminderRequest
 
 
 class UpdateReminderUseCase:
+    """Use Case: UpdateReminder (FR-110).
+
+    Edita un recordatorio existente.
+    """
+
     def __init__(self, session: AsyncSession):
         self.session = session
         self.reminder_repository = ReminderRepository(session)
@@ -21,7 +27,23 @@ class UpdateReminderUseCase:
     async def execute(
         self, user_id: uuid.UUID, reminder_id: uuid.UUID, data: UpdateReminderRequest
     ):
-        reminder = await self.reminder_repository.get_by_user_and_id(user_id, reminder_id)
+        """Actualiza un recordatorio existente.
+
+        Args:
+            user_id: UUID del usuario propietario.
+            reminder_id: UUID del recordatorio a actualizar.
+            data: Datos a actualizar (parciales).
+
+        Returns:
+            El recordatorio actualizado.
+
+        Raises:
+            NotFoundException: Si el recordatorio no existe.
+            ValidationException: Si el tipo de repetición es inválido.
+        """
+        reminder = await self.reminder_repository.get_by_user_and_id(
+            user_id, reminder_id
+        )
         if reminder is None:
             raise NotFoundException("Recordatorio no encontrado.")
 

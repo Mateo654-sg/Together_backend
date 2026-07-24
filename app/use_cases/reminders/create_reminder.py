@@ -3,6 +3,7 @@ Use Case: CreateReminder (FR-109).
 
 Crea un nuevo recordatorio.
 """
+
 import uuid
 
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -13,6 +14,11 @@ from app.schemas.reminder import CreateReminderRequest
 
 
 class CreateReminderUseCase:
+    """Use Case: CreateReminder (FR-109).
+
+    Crea un nuevo recordatorio personal para el usuario.
+    """
+
     def __init__(self, session: AsyncSession):
         self.session = session
         self.reminder_repository = ReminderRepository(session)
@@ -20,6 +26,15 @@ class CreateReminderUseCase:
     async def execute(
         self, user_id: uuid.UUID, data: CreateReminderRequest
     ) -> Reminder:
+        """Crea un nuevo recordatorio.
+
+        Args:
+            user_id: UUID del usuario propietario.
+            data: Datos del recordatorio (title, description, due_date, repeat_type, amount).
+
+        Returns:
+            El recordatorio creado.
+        """
         try:
             repeat_type = ReminderRepeatType(data.repeat_type)
         except ValueError:

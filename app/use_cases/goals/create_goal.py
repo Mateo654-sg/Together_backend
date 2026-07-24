@@ -3,6 +3,7 @@ Use Case: CreateGoal (FR-061, FR-064, FR-065, FR-066).
 
 Crea una nueva meta compartida para la pareja.
 """
+
 import uuid
 
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -16,12 +17,30 @@ from app.schemas.goal import CreateGoalRequest
 
 
 class CreateGoalUseCase:
+    """Use Case: CreateGoal (FR-061, FR-064, FR-065, FR-066).
+
+    Crea una nueva meta compartida para la pareja.
+    """
+
     def __init__(self, session: AsyncSession):
         self.session = session
         self.goal_repository = GoalRepository(session)
         self.couple_repository = CoupleRepository(session)
 
     async def execute(self, user_id: uuid.UUID, data: CreateGoalRequest) -> Goal:
+        """Crea una meta compartida.
+
+        Args:
+            user_id: UUID del usuario que crea la meta.
+            data: Datos de la meta (title, description, target_amount, target_date).
+
+        Returns:
+            La meta creada.
+
+        Raises:
+            ConflictException: Si el usuario no tiene pareja vinculada.
+            ValidationException: Si la fecha objetivo es en el pasado.
+        """
         couple = await self.couple_repository.get_active_for_user(user_id)
         if couple is None or couple.status != CoupleStatus.ACCEPTED:
             raise ConflictException("No tienes una pareja vinculada.")
@@ -30,7 +49,9 @@ class CreateGoalUseCase:
             from datetime import date
 
             if data.target_date < date.today():
-                raise ValidationException("La fecha objetivo no puede ser en el pasado.")
+                raise ValidationException(
+                    "La fecha objetivo no puede ser en el pasado."
+                )
 
         goal = Goal(
             couple_id=couple.id,

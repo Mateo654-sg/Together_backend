@@ -3,11 +3,16 @@ Use Case: UpdateGoal (FR-062, FR-064, FR-065, FR-066).
 
 Edita una meta existente.
 """
+
 import uuid
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.exceptions import ConflictException, NotFoundException, ValidationException
+from app.core.exceptions import (
+    ConflictException,
+    NotFoundException,
+    ValidationException,
+)
 from app.models.couple import CoupleStatus
 from app.models.goal import GoalStatus
 from app.repositories.couple_repository import CoupleRepository
@@ -16,6 +21,11 @@ from app.schemas.goal import UpdateGoalRequest
 
 
 class UpdateGoalUseCase:
+    """Use Case: UpdateGoal (FR-062, FR-064, FR-065, FR-066).
+
+    Edita una meta existente.
+    """
+
     def __init__(self, session: AsyncSession):
         self.session = session
         self.goal_repository = GoalRepository(session)
@@ -24,6 +34,21 @@ class UpdateGoalUseCase:
     async def execute(
         self, user_id: uuid.UUID, goal_id: uuid.UUID, data: UpdateGoalRequest
     ):
+        """Actualiza una meta existente.
+
+        Args:
+            user_id: UUID del usuario.
+            goal_id: UUID de la meta a actualizar.
+            data: Datos a actualizar (parciales).
+
+        Returns:
+            La meta actualizada.
+
+        Raises:
+            ConflictException: Si el usuario no tiene pareja vinculada.
+            NotFoundException: Si la meta no existe.
+            ValidationException: Si la fecha es inválida o el estado es incorrecto.
+        """
         couple = await self.couple_repository.get_active_for_user(user_id)
         if couple is None or couple.status != CoupleStatus.ACCEPTED:
             raise ConflictException("No tienes una pareja vinculada.")
@@ -44,7 +69,9 @@ class UpdateGoalUseCase:
             from datetime import date
 
             if data.target_date < date.today():
-                raise ValidationException("La fecha objetivo no puede ser en el pasado.")
+                raise ValidationException(
+                    "La fecha objetivo no puede ser en el pasado."
+                )
             goal.target_date = data.target_date
         if data.status is not None:
             try:

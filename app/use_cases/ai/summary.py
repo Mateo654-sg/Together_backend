@@ -3,6 +3,7 @@ Use Case: AISummary (FR-101, FR-102).
 
 Genera resúmenes semanales y mensuales.
 """
+
 import uuid
 
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -12,6 +13,11 @@ from app.services.ai.service import AIService
 
 
 class AISummaryUseCase:
+    """Use Case: AISummary (FR-101, FR-102).
+
+    Genera resúmenes semanales y mensuales de las finanzas del usuario.
+    """
+
     def __init__(self, session: AsyncSession):
         self.session = session
         self.ai_service = AIService(session)
@@ -19,6 +25,16 @@ class AISummaryUseCase:
     async def execute(
         self, user_id: uuid.UUID, data: AISummaryRequest, summary_type: str = "monthly"
     ) -> AISummaryResponse:
+        """Genera un resumen financiero con IA.
+
+        Args:
+            user_id: UUID del usuario.
+            data: Datos de la solicitud.
+            summary_type: Tipo de resumen ("weekly" o "monthly").
+
+        Returns:
+            AISummaryResponse con el período, resumen, highlights y KPIs.
+        """
         if summary_type == "weekly":
             question = "Genera un resumen financiero de esta semana."
             period = "Semanal"
@@ -26,7 +42,9 @@ class AISummaryUseCase:
             question = "Genera un resumen financiero de este mes."
             period = "Mensual"
 
-        result = await self.ai_service.chat(user_id, question, endpoint=f"{summary_type}-summary")
+        result = await self.ai_service.chat(
+            user_id, question, endpoint=f"{summary_type}-summary"
+        )
 
         highlights = [
             "Ingresos estables respecto al período anterior.",

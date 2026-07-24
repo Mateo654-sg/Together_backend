@@ -3,6 +3,7 @@ Use Case: AIPredictions (FR-103, FR-104).
 
 Genera predicciones de ahorro y cumplimiento de metas.
 """
+
 import uuid
 
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -12,6 +13,11 @@ from app.services.ai.service import AIService
 
 
 class AIPredictionsUseCase:
+    """Use Case: AIPredictions (FR-103, FR-104).
+
+    Genera predicciones de ahorro y cumplimiento de metas.
+    """
+
     def __init__(self, session: AsyncSession):
         self.session = session
         self.ai_service = AIService(session)
@@ -19,6 +25,15 @@ class AIPredictionsUseCase:
     async def execute(
         self, user_id: uuid.UUID, data: AIPredictionRequest
     ) -> AIPredictionResponse:
+        """Genera predicciones financieras con IA.
+
+        Args:
+            user_id: UUID del usuario.
+            data: Datos de la predicción (prediction_type, months_ahead).
+
+        Returns:
+            AIPredictionResponse con predicciones, confianza y recomendaciones.
+        """
         prompts = {
             "savings": f"Predice mi ahorro para los próximos {data.months_ahead} meses basado en mis tendencias actuales.",
             "goal_completion": "Predice cuándo cumpliré mis metas financieras actuales.",
@@ -26,7 +41,9 @@ class AIPredictionsUseCase:
             "balance": "Predice mi saldo para fin de mes.",
         }
 
-        question = prompts.get(data.prediction_type, f"Genera predicciones: {data.prediction_type}")
+        question = prompts.get(
+            data.prediction_type, f"Genera predicciones: {data.prediction_type}"
+        )
         await self.ai_service.chat(user_id, question, endpoint="predictions")
 
         predictions = [

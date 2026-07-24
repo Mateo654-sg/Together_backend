@@ -3,6 +3,7 @@ Use Case: AISimulator.
 
 Simula escenarios financieros "¿Qué pasaría si...?"
 """
+
 import uuid
 from decimal import Decimal
 
@@ -15,6 +16,12 @@ from app.services.ai.service import AIService
 
 
 class AISimulatorUseCase:
+    """Use Case: AISimulator.
+
+    Simula escenarios financieros "¿Qué pasaría si...?"
+    con proyecciones actuales vs simuladas.
+    """
+
     def __init__(self, session: AsyncSession):
         self.session = session
         self.ai_service = AIService(session)
@@ -24,6 +31,15 @@ class AISimulatorUseCase:
     async def execute(
         self, user_id: uuid.UUID, data: AISimulatorRequest
     ) -> AISimulatorResponse:
+        """Simula un escenario financiero.
+
+        Args:
+            user_id: UUID del usuario.
+            data: Datos de la simulación (scenario, months, monthly_amount).
+
+        Returns:
+            AISimulatorResponse con proyecciones actual, simulada, diferencia y recomendación.
+        """
         total_income = await self.income_repo.get_total_by_user(user_id)
         expenses, _ = await self.expense_repo.list_by_user(user_id, page=1, limit=1000)
         total_expense = sum(e.amount for e in expenses)

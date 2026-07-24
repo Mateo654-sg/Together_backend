@@ -3,6 +3,7 @@ Use Case: ChangePassword (FR-125).
 
 Permite al usuario cambiar su contraseña verificando la actual.
 """
+
 import uuid
 
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -13,6 +14,11 @@ from app.repositories.user_repository import UserRepository
 
 
 class ChangePasswordUseCase:
+    """Use Case: ChangePassword (FR-125).
+
+    Permite al usuario cambiar su contraseña verificando la actual.
+    """
+
     def __init__(self, session: AsyncSession):
         self.session = session
         self.user_repository = UserRepository(session)
@@ -20,6 +26,17 @@ class ChangePasswordUseCase:
     async def execute(
         self, user_id: uuid.UUID, current_password: str, new_password: str
     ) -> None:
+        """Cambia la contraseña del usuario.
+
+        Args:
+            user_id: UUID del usuario.
+            current_password: Contraseña actual para verificación.
+            new_password: Nueva contraseña a establecer.
+
+        Raises:
+            NotFoundException: Si el usuario no existe.
+            InvalidCredentialsException: Si la contraseña actual es incorrecta.
+        """
         user = await self.user_repository.get_by_id(user_id)
         if user is None:
             raise NotFoundException("Usuario no encontrado.")

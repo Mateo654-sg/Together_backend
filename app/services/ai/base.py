@@ -3,6 +3,7 @@ Interfaz base para proveedores de IA.
 
 Permite desacoplar el sistema del proveedor específico.
 """
+
 from abc import ABC, abstractmethod
 
 

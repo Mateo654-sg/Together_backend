@@ -3,6 +3,7 @@ Use Case: ListSessionHistory (FR-126).
 
 Consulta el historial de sesiones del usuario.
 """
+
 import uuid
 
 from sqlalchemy import select
@@ -13,10 +14,23 @@ from app.schemas.user import SessionHistoryItem, SessionHistoryResponse
 
 
 class ListSessionHistoryUseCase:
+    """Use Case: ListSessionHistory (FR-126).
+
+    Consulta el historial de sesiones del usuario (últimas 20).
+    """
+
     def __init__(self, session: AsyncSession):
         self.session = session
 
     async def execute(self, user_id: uuid.UUID) -> SessionHistoryResponse:
+        """Lista el historial de sesiones del usuario.
+
+        Args:
+            user_id: UUID del usuario.
+
+        Returns:
+            SessionHistoryResponse con las últimas 20 sesiones.
+        """
         stmt = (
             select(Session)
             .where(Session.user_id == user_id, Session.deleted_at.is_(None))

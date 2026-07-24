@@ -5,6 +5,7 @@ Implementa rotación de Refresh Tokens (Documento 12 — Seguridad):
 cada Refresh Token utilizado genera uno nuevo y el anterior queda
 invalidado inmediatamente.
 """
+
 from datetime import datetime, timedelta, timezone
 
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -24,12 +25,31 @@ from app.schemas.auth import RefreshRequest, TokenResponse
 
 
 class RefreshTokenUseCase:
+    """Use Case: RefreshToken.
+
+    Implementa rotación de Refresh Tokens (Documento 12 — Seguridad):
+    cada Refresh Token utilizado genera uno nuevo y el anterior queda
+    invalidado inmediatamente.
+    """
+
     def __init__(self, session: AsyncSession):
         self.session = session
         self.session_repository = SessionRepository(session)
         self.user_repository = UserRepository(session)
 
     async def execute(self, data: RefreshRequest) -> TokenResponse:
+        """Rota el refresh token: invalida el actual y genera uno nuevo.
+
+        Args:
+            data: Datos con el refresh token a rotar.
+
+        Returns:
+            TokenResponse con los nuevos tokens de acceso y refresh.
+
+        Raises:
+            InvalidTokenException: Si el token es inválido, la sesión ya no es válida
+                o el usuario no existe/está inactivo.
+        """
         payload = decode_token(data.refresh_token, expected_type=TokenType.REFRESH)
         jti = payload.get("jti")
         user_id = payload.get("sub")
@@ -59,4 +79,6 @@ class RefreshTokenUseCase:
         self.session.add(new_session)
         await self.session.commit()
 
-        return TokenResponse(access_token=new_access_token, refresh_token=new_refresh_token)
+        return TokenResponse(
+            access_token=new_access_token, refresh_token=new_refresh_token
+        )

@@ -3,6 +3,7 @@ Use Case: ListGoals (FR-061-List).
 
 Lista las metas de la pareja con paginación y filtro por estado.
 """
+
 import uuid
 
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -16,6 +17,11 @@ from app.schemas.goal import GoalListResponse, GoalResponse
 
 
 class ListGoalsUseCase:
+    """Use Case: ListGoals (FR-061-List).
+
+    Lista las metas de la pareja con paginación y filtro por estado.
+    """
+
     def __init__(self, session: AsyncSession):
         self.session = session
         self.goal_repository = GoalRepository(session)
@@ -29,6 +35,20 @@ class ListGoalsUseCase:
         limit: int = 20,
         status: GoalStatus | None = None,
     ) -> GoalListResponse:
+        """Lista metas de la pareja con cálculo de progreso y predicciones.
+
+        Args:
+            user_id: UUID del usuario.
+            page: Número de página.
+            limit: Cantidad máxima de resultados.
+            status: Filtrar por estado de la meta.
+
+        Returns:
+            GoalListResponse con metas enriquecidas (progreso, días restantes, predicción).
+
+        Raises:
+            ConflictException: Si el usuario no tiene pareja vinculada.
+        """
         couple = await self.couple_repository.get_active_for_user(user_id)
         if couple is None or couple.status != CoupleStatus.ACCEPTED:
             raise ConflictException("No tienes una pareja vinculada.")

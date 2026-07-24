@@ -3,6 +3,7 @@ Use Case: AIInsights (FR-098, FR-099).
 
 Genera insights automáticos sobre las finanzas.
 """
+
 import uuid
 
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -12,11 +13,24 @@ from app.services.ai.service import AIService
 
 
 class AIInsightsUseCase:
+    """Use Case: AIInsights (FR-098, FR-099).
+
+    Genera insights automáticos sobre las finanzas del usuario.
+    """
+
     def __init__(self, session: AsyncSession):
         self.session = session
         self.ai_service = AIService(session)
 
     async def execute(self, user_id: uuid.UUID) -> AIInsightsResponse:
+        """Genera insights financieros automáticos.
+
+        Args:
+            user_id: UUID del usuario.
+
+        Returns:
+            AIInsightsResponse con la lista de insights y período analizado.
+        """
         question = "Genera insights automáticos sobre mis finanzas de esta semana."
         await self.ai_service.chat(user_id, question, endpoint="insights")
 

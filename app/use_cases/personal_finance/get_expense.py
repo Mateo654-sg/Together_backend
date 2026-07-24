@@ -3,6 +3,7 @@ Use Case: GetExpense (FR-039 — visualizar un gasto específico).
 
 Obtiene un gasto personal por ID, validando que pertenezca al usuario.
 """
+
 import uuid
 
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -13,6 +14,11 @@ from app.repositories.personal_expense_repository import PersonalExpenseReposito
 
 
 class GetExpenseUseCase:
+    """Use Case: GetExpense (FR-039 — visualizar un gasto específico).
+
+    Obtiene un gasto personal por ID, validando que pertenezca al usuario.
+    """
+
     def __init__(self, session: AsyncSession):
         self.session = session
         self.repository = PersonalExpenseRepository(session)
@@ -20,6 +26,18 @@ class GetExpenseUseCase:
     async def execute(
         self, user_id: uuid.UUID, expense_id: uuid.UUID
     ) -> PersonalExpense:
+        """Obtiene un gasto personal específico.
+
+        Args:
+            user_id: UUID del usuario propietario.
+            expense_id: UUID del gasto a obtener.
+
+        Returns:
+            El gasto personal encontrado.
+
+        Raises:
+            NotFoundException: Si el gasto no existe.
+        """
         expense = await self.repository.get_by_user_and_id(user_id, expense_id)
         if expense is None:
             raise NotFoundException("Gasto no encontrado.")

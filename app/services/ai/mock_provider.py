@@ -3,6 +3,7 @@ Proveedor de IA mock para desarrollo y testing.
 
 Genera respuestas basadas en reglas sin consumir tokens reales.
 """
+
 import random
 
 from app.services.ai.base import AIProvider

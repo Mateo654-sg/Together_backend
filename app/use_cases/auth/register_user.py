@@ -3,6 +3,7 @@ Use Case: RegisterUser (FR-001).
 
 Crea una nueva cuenta de usuario mediante correo electrónico.
 """
+
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.exceptions import EmailAlreadyExistsException
@@ -14,11 +15,28 @@ from app.schemas.auth import RegisterRequest
 
 
 class RegisterUserUseCase:
+    """Use Case: RegisterUser (FR-001).
+
+    Crea una nueva cuenta de usuario mediante correo electrónico,
+    crea configuración por defecto (UserSettings) y retorna el usuario.
+    """
+
     def __init__(self, session: AsyncSession):
         self.session = session
         self.user_repository = UserRepository(session)
 
     async def execute(self, data: RegisterRequest) -> User:
+        """Registra un nuevo usuario en el sistema.
+
+        Args:
+            data: Datos de registro (first_name, last_name, email, password).
+
+        Returns:
+            El usuario creado con su configuración por defecto.
+
+        Raises:
+            EmailAlreadyExistsException: Si el correo ya está registrado.
+        """
         email_normalized = data.email.lower()
 
         if await self.user_repository.email_exists(email_normalized):

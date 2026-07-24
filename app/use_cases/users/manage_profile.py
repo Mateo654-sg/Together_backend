@@ -1,6 +1,7 @@
 """
 Use Cases del módulo Users: consultar y editar perfil (FR-006).
 """
+
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.exceptions import NotFoundException
@@ -10,10 +11,26 @@ from app.schemas.user import UpdateUserRequest
 
 
 class GetCurrentUserUseCase:
+    """Use Case: GetCurrentuser (FR-006).
+
+    Consulta el perfil del usuario autenticado.
+    """
+
     def __init__(self, session: AsyncSession):
         self.user_repository = UserRepository(session)
 
     async def execute(self, user_id) -> User:
+        """Obtiene los datos del usuario actual.
+
+        Args:
+            user_id: UUID del usuario.
+
+        Returns:
+            El usuario encontrado.
+
+        Raises:
+            NotFoundException: Si el usuario no existe.
+        """
         user = await self.user_repository.get_by_id(user_id)
         if user is None:
             raise NotFoundException("Usuario no encontrado.")
@@ -21,11 +38,28 @@ class GetCurrentUserUseCase:
 
 
 class UpdateUserProfileUseCase:
+    """Use Case: UpdateUserProfile (FR-006).
+
+    Actualiza el perfil del usuario autenticado.
+    """
+
     def __init__(self, session: AsyncSession):
         self.session = session
         self.user_repository = UserRepository(session)
 
     async def execute(self, user_id, data: UpdateUserRequest) -> User:
+        """Actualiza los datos del perfil del usuario.
+
+        Args:
+            user_id: UUID del usuario.
+            data: Datos a actualizar (parciales).
+
+        Returns:
+            El usuario actualizado.
+
+        Raises:
+            NotFoundException: Si el usuario no existe.
+        """
         user = await self.user_repository.get_by_id(user_id)
         if user is None:
             raise NotFoundException("Usuario no encontrado.")
@@ -40,13 +74,26 @@ class UpdateUserProfileUseCase:
 
 
 class DeleteUserUseCase:
-    """Eliminación de cuenta (FR-010): Soft Delete tras confirmar contraseña."""
+    """Use Case: DeleteUser (FR-010).
+
+    Eliminación de cuenta: Soft Delete tras confirmar contraseña.
+    """
 
     def __init__(self, session: AsyncSession):
         self.session = session
         self.user_repository = UserRepository(session)
 
     async def execute(self, user_id, password: str) -> None:
+        """Elimina lógicamente la cuenta del usuario.
+
+        Args:
+            user_id: UUID del usuario.
+            password: Contraseña para confirmar la eliminación.
+
+        Raises:
+            NotFoundException: Si el usuario no existe.
+            InvalidCredentialsException: Si la contraseña es incorrecta.
+        """
         from app.core.exceptions import InvalidCredentialsException
         from app.core.security import verify_password
 

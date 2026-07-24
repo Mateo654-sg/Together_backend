@@ -3,6 +3,7 @@ Use Case: UpdateIncome (FR-022).
 
 Edita un ingreso personal existente.
 """
+
 import uuid
 
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -15,6 +16,11 @@ from app.schemas.personal_finance import UpdateIncomeRequest
 
 
 class UpdateIncomeUseCase:
+    """Use Case: UpdateIncome (FR-022).
+
+    Edita un ingreso personal existente.
+    """
+
     def __init__(self, session: AsyncSession):
         self.session = session
         self.repository = PersonalIncomeRepository(session)
@@ -23,6 +29,20 @@ class UpdateIncomeUseCase:
     async def execute(
         self, user_id: uuid.UUID, income_id: uuid.UUID, data: UpdateIncomeRequest
     ) -> PersonalIncome:
+        """Actualiza un ingreso personal existente.
+
+        Args:
+            user_id: UUID del usuario propietario.
+            income_id: UUID del ingreso a actualizar.
+            data: Datos a actualizar (parciales).
+
+        Returns:
+            El ingreso personal actualizado.
+
+        Raises:
+            NotFoundException: Si el ingreso no existe.
+            ValidationException: Si la categoría especificada no existe.
+        """
         income = await self.repository.get_by_user_and_id(user_id, income_id)
         if income is None:
             raise NotFoundException("Ingreso no encontrado.")

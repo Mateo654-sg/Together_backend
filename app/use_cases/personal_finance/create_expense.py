@@ -3,6 +3,7 @@ Use Case: CreateExpense (FR-020).
 
 Registra un gasto personal nuevo.
 """
+
 import uuid
 
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -15,6 +16,11 @@ from app.schemas.personal_finance import CreateExpenseRequest
 
 
 class CreateExpenseUseCase:
+    """Use Case: CreateExpense (FR-020).
+
+    Registra un gasto personal nuevo.
+    """
+
     def __init__(self, session: AsyncSession):
         self.session = session
         self.repository = PersonalExpenseRepository(session)
@@ -23,6 +29,18 @@ class CreateExpenseUseCase:
     async def execute(
         self, user_id: uuid.UUID, data: CreateExpenseRequest
     ) -> PersonalExpense:
+        """Crea un nuevo gasto personal.
+
+        Args:
+            user_id: UUID del usuario propietario.
+            data: Datos del gasto a crear (amount, description, category_id, etc.).
+
+        Returns:
+            El gasto personal creado.
+
+        Raises:
+            ValidationException: Si la categoría especificada no existe.
+        """
         if data.category_id is not None:
             category = await self.category_repository.get_by_user_and_id(
                 user_id, data.category_id

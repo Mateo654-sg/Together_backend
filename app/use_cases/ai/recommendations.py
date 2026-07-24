@@ -3,6 +3,7 @@ Use Case: AIRecommendations (FR-106, FR-108).
 
 Genera recomendaciones personalizadas de ahorro.
 """
+
 import uuid
 from decimal import Decimal
 
@@ -15,6 +16,11 @@ from app.services.ai.service import AIService
 
 
 class AIRecommendationsUseCase:
+    """Use Case: AIRecommendations (FR-106, FR-108).
+
+    Genera recomendaciones personalizadas de ahorro con potencial calculado.
+    """
+
     def __init__(self, session: AsyncSession):
         self.session = session
         self.ai_service = AIService(session)
@@ -22,6 +28,14 @@ class AIRecommendationsUseCase:
         self.income_repo = PersonalIncomeRepository(session)
 
     async def execute(self, user_id: uuid.UUID) -> AIRecommendationsResponse:
+        """Genera recomendaciones personalizadas de ahorro.
+
+        Args:
+            user_id: UUID del usuario.
+
+        Returns:
+            AIRecommendationsResponse con recomendaciones y ahorro potencial.
+        """
         question = "Genera recomendaciones personalizadas para mejorar mis finanzas."
         await self.ai_service.chat(user_id, question, endpoint="recommendations")
 

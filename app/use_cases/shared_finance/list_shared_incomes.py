@@ -3,6 +3,7 @@ Use Case: ListSharedIncomes.
 
 Lista ingresos compartidos de la pareja.
 """
+
 import uuid
 
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -15,6 +16,11 @@ from app.schemas.shared_finance import SharedIncomeListResponse
 
 
 class ListSharedIncomesUseCase:
+    """Use Case: ListSharedIncomes.
+
+    Lista ingresos compartidos de la pareja.
+    """
+
     def __init__(self, session: AsyncSession):
         self.session = session
         self.income_repository = SharedIncomeRepository(session)
@@ -27,6 +33,19 @@ class ListSharedIncomesUseCase:
         page: int = 1,
         limit: int = 20,
     ) -> SharedIncomeListResponse:
+        """Lista ingresos compartidos de la pareja con paginación.
+
+        Args:
+            user_id: UUID del usuario.
+            page: Número de página.
+            limit: Cantidad máxima de resultados.
+
+        Returns:
+            SharedIncomeListResponse con los ingresos y paginación.
+
+        Raises:
+            ConflictException: Si el usuario no tiene pareja vinculada.
+        """
         couple = await self.couple_repository.get_active_for_user(user_id)
         if couple is None or couple.status != CoupleStatus.ACCEPTED:
             raise ConflictException("No tienes una pareja vinculada.")

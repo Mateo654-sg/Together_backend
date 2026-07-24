@@ -27,7 +27,16 @@ AsyncSessionLocal = async_sessionmaker(
 
 
 async def get_db() -> AsyncGenerator[AsyncSession, None]:
-    """Dependency de FastAPI que provee una sesión de base de datos por request."""
+    """Dependency de FastAPI que provee una sesión de base de datos por request.
+
+    Se encarga de:
+    - Crear una nueva sesión por cada request HTTP.
+    - Hacer rollback automático si ocurre una excepción.
+    - Cerrar la sesión al finalizar el request.
+
+    Yields:
+        AsyncSession: Sesión async de SQLAlchemy para usar en repositories.
+    """
     async with AsyncSessionLocal() as session:
         try:
             yield session

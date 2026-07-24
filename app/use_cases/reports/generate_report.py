@@ -3,6 +3,7 @@ Use Case: GenerateReport (FR-089 a FR-097).
 
 Genera un reporte financiero en el formato solicitado.
 """
+
 import json
 import uuid
 from datetime import datetime, timezone
@@ -15,13 +16,28 @@ from app.schemas.report import GenerateReportRequest
 
 
 class GenerateReportUseCase:
+    """Use Case: GenerateReport (FR-089 a FR-097).
+
+    Genera un reporte financiero en el formato solicitado.
+    """
+
     def __init__(self, session: AsyncSession):
         self.session = session
         self.report_repository = ReportRepository(session)
 
-    async def execute(
-        self, user_id: uuid.UUID, data: GenerateReportRequest
-    ) -> Report:
+    async def execute(self, user_id: uuid.UUID, data: GenerateReportRequest) -> Report:
+        """Genera un nuevo reporte financiero.
+
+        Args:
+            user_id: UUID del usuario propietario.
+            data: Datos del reporte (report_type, format, month, year, category_id).
+
+        Returns:
+            El reporte generado con estado COMPLETED.
+
+        Raises:
+            ValidationException: Si el tipo de reporte o formato son inválidos.
+        """
         try:
             report_type = ReportType(data.report_type)
         except ValueError:

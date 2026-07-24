@@ -3,6 +3,7 @@ Use Case: UpdateCategory (FR-024 — edición de categoría).
 
 Actualiza el nombre, icono o color de una categoría existente.
 """
+
 import uuid
 
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -14,6 +15,11 @@ from app.schemas.personal_finance import UpdateCategoryRequest
 
 
 class UpdateCategoryUseCase:
+    """Use Case: UpdateCategory (FR-024 — edición de categoría).
+
+    Actualiza el nombre, icono o color de una categoría existente.
+    """
+
     def __init__(self, session: AsyncSession):
         self.session = session
         self.repository = PersonalCategoryRepository(session)
@@ -21,6 +27,20 @@ class UpdateCategoryUseCase:
     async def execute(
         self, user_id: uuid.UUID, category_id: uuid.UUID, data: UpdateCategoryRequest
     ) -> PersonalCategory:
+        """Actualiza una categoría personal existente.
+
+        Args:
+            user_id: UUID del usuario propietario.
+            category_id: UUID de la categoría a actualizar.
+            data: Datos a actualizar (name, icon, color).
+
+        Returns:
+            La categoría actualizada.
+
+        Raises:
+            NotFoundException: Si la categoría no existe.
+            ConflictException: Si ya existe otra categoría con el nuevo nombre.
+        """
         category = await self.repository.get_by_user_and_id(user_id, category_id)
         if category is None:
             raise NotFoundException("Categoría no encontrada.")

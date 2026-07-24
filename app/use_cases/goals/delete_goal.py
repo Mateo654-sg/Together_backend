@@ -3,6 +3,7 @@ Use Case: DeleteGoal (FR-063).
 
 Elimina (soft delete) una meta existente.
 """
+
 import uuid
 
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -14,12 +15,27 @@ from app.repositories.goal_repository import GoalRepository
 
 
 class DeleteGoalUseCase:
+    """Use Case: DeleteGoal (FR-063).
+
+    Elimina (soft delete) una meta existente.
+    """
+
     def __init__(self, session: AsyncSession):
         self.session = session
         self.goal_repository = GoalRepository(session)
         self.couple_repository = CoupleRepository(session)
 
     async def execute(self, user_id: uuid.UUID, goal_id: uuid.UUID) -> None:
+        """Elimina lógicamente una meta.
+
+        Args:
+            user_id: UUID del usuario.
+            goal_id: UUID de la meta a eliminar.
+
+        Raises:
+            ConflictException: Si el usuario no tiene pareja vinculada.
+            NotFoundException: Si la meta no existe.
+        """
         couple = await self.couple_repository.get_active_for_user(user_id)
         if couple is None or couple.status != CoupleStatus.ACCEPTED:
             raise ConflictException("No tienes una pareja vinculada.")

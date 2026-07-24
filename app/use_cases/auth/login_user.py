@@ -4,6 +4,7 @@ Use Case: LoginUser (FR-002).
 Valida credenciales, gestiona bloqueo por intentos fallidos
 (Documento 12: 5 intentos → bloqueo de 15 minutos) y emite tokens.
 """
+
 from datetime import datetime, timedelta, timezone
 
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -25,6 +26,13 @@ LOCKOUT_MINUTES = 15
 
 
 class LoginUserUseCase:
+    """Use Case: LoginUser (FR-002).
+
+    Valida credenciales de usuario, gestiona bloqueo por intentos fallidos
+    (5 intentos → bloqueo de 15 minutos según Documento 12) y emite
+    tokens de acceso y refresh.
+    """
+
     def __init__(self, session: AsyncSession):
         self.session = session
         self.user_repository = UserRepository(session)
@@ -34,6 +42,20 @@ class LoginUserUseCase:
     async def execute(
         self, data: LoginRequest, ip: str | None = None, device: str | None = None
     ) -> TokenResponse:
+        """Ejecuta el flujo de login completo.
+
+        Args:
+            data: Datos de login (email y password).
+            ip: Dirección IP del cliente (opcional).
+            device: Información del dispositivo/navegador (opcional).
+
+        Returns:
+            TokenResponse con los tokens de acceso y refresh.
+
+        Raises:
+            InvalidCredentialsException: Si el email no existe o la contraseña es incorrecta.
+            AccountLockedException: Si la cuenta está bloqueada por intentos fallidos.
+        """
         user = await self.user_repository.get_by_email(data.email)
 
         if user is None:
@@ -46,7 +68,9 @@ class LoginUserUseCase:
         if user.locked_until and user.locked_until > datetime.now(timezone.utc):
             raise AccountLockedException()
 
-        if not user.password_hash or not verify_password(data.password, user.password_hash):
+        if not user.password_hash or not verify_password(
+            data.password, user.password_hash
+        ):
             await self.user_repository.increment_failed_attempts(user)
             if user.failed_login_attempts >= MAX_FAILED_ATTEMPTS:
                 user.locked_until = datetime.now(timezone.utc) + timedelta(

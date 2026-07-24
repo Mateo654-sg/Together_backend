@@ -3,6 +3,7 @@ Use Case: LogoutUser (FR-005).
 
 Invalida la sesión (refresh token) asociada.
 """
+
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.security import TokenType, decode_token
@@ -11,11 +12,22 @@ from app.schemas.auth import RefreshRequest
 
 
 class LogoutUserUseCase:
+    """Use Case: LogoutUser (FR-005).
+
+    Invalida la sesión (refresh token) asociada al usuario.
+    La operación es idempotente: si el token ya es inválido, no retorna error.
+    """
+
     def __init__(self, session: AsyncSession):
         self.session = session
         self.session_repository = SessionRepository(session)
 
     async def execute(self, data: RefreshRequest) -> None:
+        """Ejecuta el logout invalidando el refresh token.
+
+        Args:
+            data: Datos con el refresh token a invalidar.
+        """
         try:
             payload = decode_token(data.refresh_token, expected_type=TokenType.REFRESH)
         except Exception:

@@ -3,6 +3,7 @@ Use Case: UpdateSettings (FR-127, FR-128, FR-129).
 
 Actualiza la configuración del usuario (tema, idioma, moneda, etc.).
 """
+
 import uuid
 
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -14,6 +15,11 @@ from app.schemas.user import UpdateUserSettingsRequest
 
 
 class UpdateSettingsUseCase:
+    """Use Case: UpdateSettings (FR-127, FR-128, FR-129).
+
+    Actualiza la configuración del usuario (tema, idioma, moneda, etc.).
+    """
+
     def __init__(self, session: AsyncSession):
         self.session = session
         self.user_repository = UserRepository(session)
@@ -21,6 +27,18 @@ class UpdateSettingsUseCase:
     async def execute(
         self, user_id: uuid.UUID, data: UpdateUserSettingsRequest
     ) -> UserSettings:
+        """Actualiza la configuración del usuario.
+
+        Args:
+            user_id: UUID del usuario.
+            data: Datos de configuración a actualizar.
+
+        Returns:
+            La configuración actualizada.
+
+        Raises:
+            NotFoundException: Si el usuario no existe.
+        """
         user = await self.user_repository.get_by_id(user_id)
         if user is None:
             raise NotFoundException("Usuario no encontrado.")

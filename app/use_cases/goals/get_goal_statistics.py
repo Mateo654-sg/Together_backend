@@ -3,6 +3,7 @@ Use Case: GetGoalStatistics (FR-069, FR-070, FR-071, FR-072).
 
 Obtiene estadísticas generales de las metas de la pareja.
 """
+
 import uuid
 from datetime import date
 
@@ -17,12 +18,29 @@ from app.schemas.goal import GoalStatisticsResponse
 
 
 class GetGoalStatisticsUseCase:
+    """Use Case: GetGoalStatistics (FR-069, FR-070, FR-071, FR-072).
+
+    Obtiene estadísticas generales de las metas de la pareja,
+    incluyendo progreso general y metas en/desde fecha.
+    """
+
     def __init__(self, session: AsyncSession):
         self.session = session
         self.goal_repository = GoalRepository(session)
         self.couple_repository = CoupleRepository(session)
 
     async def execute(self, user_id: uuid.UUID) -> GoalStatisticsResponse:
+        """Calcula estadísticas de metas de la pareja.
+
+        Args:
+            user_id: UUID del usuario.
+
+        Returns:
+            GoalStatisticsResponse con totales, progreso y estado de cada meta.
+
+        Raises:
+            ConflictException: Si el usuario no tiene pareja vinculada.
+        """
         couple = await self.couple_repository.get_active_for_user(user_id)
         if couple is None or couple.status != CoupleStatus.ACCEPTED:
             raise ConflictException("No tienes una pareja vinculada.")
@@ -45,13 +63,19 @@ class GetGoalStatisticsUseCase:
                 goals_behind += 1
                 continue
 
-            progress = float(goal.current_amount / goal.target_amount) if goal.target_amount > 0 else 0
+            progress = (
+                float(goal.current_amount / goal.target_amount)
+                if goal.target_amount > 0
+                else 0
+            )
             days_elapsed = (date.today() - goal.created_at.date()).days
             if days_elapsed <= 0:
                 goals_on_track += 1
                 continue
 
-            expected_progress = days_elapsed / ((goal.target_date - goal.created_at.date()).days or 1)
+            expected_progress = days_elapsed / (
+                (goal.target_date - goal.created_at.date()).days or 1
+            )
             if progress >= expected_progress:
                 goals_on_track += 1
             else:
