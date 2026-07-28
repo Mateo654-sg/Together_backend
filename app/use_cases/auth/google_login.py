@@ -13,11 +13,29 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import settings as app_settings
 from app.core.security import create_access_token, create_refresh_token
+from app.models.personal_category import PersonalCategory
 from app.models.session import Session as SessionModel
 from app.models.user import User
+from app.models.user_settings import UserSettings
+from app.repositories.personal_category_repository import PersonalCategoryRepository
 from app.repositories.session_repository import SessionRepository
 from app.repositories.user_repository import UserRepository
 from app.schemas.auth import GoogleLoginRequest, TokenResponse
+
+DEFAULT_CATEGORIES = [
+    ("Alimentación", "UtensilsCrossed", "#FF6B6B"),
+    ("Transporte", "Car", "#4ECDC4"),
+    ("Entretenimiento", "Gamepad2", "#A78BFA"),
+    ("Servicios", "Wifi", "#F59E0B"),
+    ("Salud", "Heart", "#EF4444"),
+    ("Educación", "BookOpen", "#3B82F6"),
+    ("Ropa", "Shirt", "#EC4899"),
+    ("Otros", "MoreHorizontal", "#6B7280"),
+    ("Salario", "Banknote", "#10B981"),
+    ("Freelance", "Laptop", "#8B5CF6"),
+    ("Inversiones", "TrendingUp", "#06B6D4"),
+    ("Regalos", "Gift", "#F97316"),
+]
 
 GOOGLE_TOKENINFO_URL = "https://oauth2.googleapis.com/tokeninfo"
 
@@ -27,6 +45,7 @@ class GoogleLoginUseCase:
         self.session = session
         self.user_repository = UserRepository(session)
         self.session_repository = SessionRepository(session)
+        self.category_repository = PersonalCategoryRepository(session)
 
     async def execute(
         self, data: GoogleLoginRequest, ip: str | None = None, device: str | None = None
@@ -71,6 +90,18 @@ class GoogleLoginUseCase:
             )
             self.session.add(user)
             await self.session.flush()
+
+            settings_obj = UserSettings(user_id=user.id)
+            self.session.add(settings_obj)
+
+            for name, icon, color in DEFAULT_CATEGORIES:
+                category = PersonalCategory(
+                    user_id=user.id,
+                    name=name,
+                    icon=icon,
+                    color=color,
+                )
+                await self.category_repository.create(category)
         else:
             if not user.google_id:
                 user.google_id = google_id
