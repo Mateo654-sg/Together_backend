@@ -37,13 +37,7 @@ HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
 
 EXPOSE 8000
 
-COPY <<'EOF' /app/start.sh
-#!/bin/bash
-set -e
-alembic upgrade head
-exec uvicorn app.main:app --host 0.0.0.0 --port 8000
-EOF
-
-RUN chmod +x /app/start.sh
+RUN printf '#!/bin/bash\nset -e\nalembic upgrade head\nexec uvicorn app.main:app --host 0.0.0.0 --port 8000\n' > /app/start.sh && \
+    chmod +x /app/start.sh
 
 CMD ["/app/start.sh"]
