@@ -91,5 +91,4 @@ class UpdateSharedExpenseUseCase:
             expense.expense_date = data.expense_date
 
         await self.session.commit()
-        await self.expense_repository.refresh(expense)
         return expense

@@ -44,5 +44,4 @@ class UpdateAvatarUseCase:
 
         user.avatar_url = avatar_url
         await self.session.commit()
-        await self.user_repository.refresh(user)
         return user

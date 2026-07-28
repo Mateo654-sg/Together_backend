@@ -1,14 +1,13 @@
 """
 Use Case: ListGoals (FR-061-List).
 
-Lista las metas de la pareja con paginación y filtro por estado.
+Lista las metas de la pareja o personales con paginación y filtro por estado.
 """
 
 import uuid
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.exceptions import ConflictException
 from app.models.couple import CoupleStatus
 from app.models.goal import GoalStatus
 from app.repositories.couple_repository import CoupleRepository
@@ -19,7 +18,7 @@ from app.schemas.goal import GoalListResponse, GoalResponse
 class ListGoalsUseCase:
     """Use Case: ListGoals (FR-061-List).
 
-    Lista las metas de la pareja con paginación y filtro por estado.
+    Lista las metas de la pareja o personales con paginación y filtro por estado.
     """
 
     def __init__(self, session: AsyncSession):
@@ -35,7 +34,7 @@ class ListGoalsUseCase:
         limit: int = 20,
         status: GoalStatus | None = None,
     ) -> GoalListResponse:
-        """Lista metas de la pareja con cálculo de progreso y predicciones.
+        """Lista metas con cálculo de progreso y predicciones.
 
         Args:
             user_id: UUID del usuario.
@@ -45,17 +44,18 @@ class ListGoalsUseCase:
 
         Returns:
             GoalListResponse con metas enriquecidas (progreso, días restantes, predicción).
-
-        Raises:
-            ConflictException: Si el usuario no tiene pareja vinculada.
         """
         couple = await self.couple_repository.get_active_for_user(user_id)
-        if couple is None or couple.status != CoupleStatus.ACCEPTED:
-            raise ConflictException("No tienes una pareja vinculada.")
+        is_personal = couple is None or couple.status != CoupleStatus.ACCEPTED
 
-        goals, total = await self.goal_repository.list_by_couple(
-            couple.id, page=page, limit=limit, status=status
-        )
+        if is_personal:
+            goals, total = await self.goal_repository.list_by_user(
+                user_id, page=page, limit=limit, status=status
+            )
+        else:
+            goals, total = await self.goal_repository.list_by_couple(
+                couple.id, page=page, limit=limit, status=status
+            )
 
         data = []
         for goal in goals:
@@ -111,8 +111,3 @@ class ListGoalsUseCase:
         days_needed = int(remaining_amount / daily_rate)
         predicted = date.today() + timedelta(days=days_needed)
         return predicted
-
-    def _calculate_progress(self, goal) -> float | None:
-        if goal.target_amount <= 0:
-            return None
-        return min(float(goal.current_amount / goal.target_amount * 100), 100.0)

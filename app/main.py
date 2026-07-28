@@ -60,6 +60,11 @@ async def validation_exception_handler(request: Request, exc: RequestValidationE
 
 @app.exception_handler(Exception)
 async def unhandled_exception_handler(request: Request, exc: Exception):
+    if isinstance(exc, AppException):
+        return JSONResponse(
+            status_code=exc.status_code,
+            content={"success": False, "message": exc.message, "errors": []},
+        )
     # Nunca exponer excepciones internas al usuario (Documento 06/09).
     return JSONResponse(
         status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,

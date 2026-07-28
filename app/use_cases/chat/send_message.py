@@ -50,5 +50,4 @@ class SendMessageUseCase:
         )
         await self.chat_repository.create(message)
         await self.session.commit()
-        await self.chat_repository.refresh(message)
         return message

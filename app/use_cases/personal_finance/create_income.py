@@ -58,5 +58,4 @@ class CreateIncomeUseCase:
         )
         await self.repository.create(income)
         await self.session.commit()
-        await self.repository.refresh(income)
         return income

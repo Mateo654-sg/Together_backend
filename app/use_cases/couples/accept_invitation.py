@@ -64,5 +64,4 @@ class AcceptInvitationUseCase:
         couple.status = CoupleStatus.ACCEPTED
 
         await self.session.commit()
-        await self.couple_repository.refresh(couple)
         return couple

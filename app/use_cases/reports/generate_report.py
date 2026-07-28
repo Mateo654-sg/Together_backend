@@ -74,5 +74,4 @@ class GenerateReportUseCase:
         )
         await self.report_repository.create(report)
         await self.session.commit()
-        await self.report_repository.refresh(report)
         return report

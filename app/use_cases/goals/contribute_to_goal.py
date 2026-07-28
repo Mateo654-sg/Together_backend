@@ -9,7 +9,6 @@ import uuid
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.exceptions import (
-    ConflictException,
     NotFoundException,
     ValidationException,
 )
@@ -47,15 +46,17 @@ class ContributeToGoalUseCase:
             El aporte registrado.
 
         Raises:
-            ConflictException: Si el usuario no tiene pareja vinculada.
             NotFoundException: Si la meta no existe.
             ValidationException: Si la meta no está activa.
         """
         couple = await self.couple_repository.get_active_for_user(user_id)
-        if couple is None or couple.status != CoupleStatus.ACCEPTED:
-            raise ConflictException("No tienes una pareja vinculada.")
+        is_personal = couple is None or couple.status != CoupleStatus.ACCEPTED
 
-        goal = await self.goal_repository.get_by_couple_and_id(couple.id, data.goal_id)
+        if is_personal:
+            goal = await self.goal_repository.get_by_user_and_id(user_id, data.goal_id)
+        else:
+            goal = await self.goal_repository.get_by_couple_and_id(couple.id, data.goal_id)
+
         if goal is None:
             raise NotFoundException("Meta no encontrada.")
 
@@ -77,5 +78,4 @@ class ContributeToGoalUseCase:
             goal.status = GoalStatus.COMPLETED
 
         await self.session.commit()
-        await self.contribution_repository.refresh(contribution)
         return contribution

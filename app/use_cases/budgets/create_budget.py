@@ -64,5 +64,4 @@ class CreateBudgetUseCase:
         )
         await self.budget_repository.create(budget)
         await self.session.commit()
-        await self.budget_repository.refresh(budget)
         return budget

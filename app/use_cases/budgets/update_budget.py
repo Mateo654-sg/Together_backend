@@ -62,5 +62,4 @@ class UpdateBudgetUseCase:
             budget.year = data.year
 
         await self.session.commit()
-        await self.budget_repository.refresh(budget)
         return budget

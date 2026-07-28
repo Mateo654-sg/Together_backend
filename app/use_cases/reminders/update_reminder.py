@@ -64,5 +64,4 @@ class UpdateReminderUseCase:
             reminder.amount = data.amount
 
         await self.session.commit()
-        await self.reminder_repository.refresh(reminder)
         return reminder

@@ -52,5 +52,4 @@ class RejectInvitationUseCase:
 
         couple.status = CoupleStatus.REJECTED
         await self.session.commit()
-        await self.couple_repository.refresh(couple)
         return couple

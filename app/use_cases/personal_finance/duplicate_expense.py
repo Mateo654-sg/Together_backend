@@ -56,5 +56,4 @@ class DuplicateExpenseUseCase:
         )
         await self.repository.create(duplicate)
         await self.session.commit()
-        await self.repository.refresh(duplicate)
         return duplicate

@@ -71,5 +71,4 @@ class UpdateExpenseUseCase:
             expense.is_favorite = data.is_favorite
 
         await self.session.commit()
-        await self.repository.refresh(expense)
         return expense

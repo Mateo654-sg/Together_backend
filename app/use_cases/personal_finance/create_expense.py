@@ -60,5 +60,4 @@ class CreateExpenseUseCase:
         )
         await self.repository.create(expense)
         await self.session.commit()
-        await self.repository.refresh(expense)
         return expense

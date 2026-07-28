@@ -56,5 +56,4 @@ class CreateSharedIncomeUseCase:
         )
         await self.income_repository.create(income)
         await self.session.commit()
-        await self.income_repository.refresh(income)
         return income

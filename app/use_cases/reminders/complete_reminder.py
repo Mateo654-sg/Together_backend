@@ -46,5 +46,4 @@ class CompleteReminderUseCase:
 
         reminder.is_completed = not reminder.is_completed
         await self.session.commit()
-        await self.reminder_repository.refresh(reminder)
         return ReminderResponse.model_validate(reminder)

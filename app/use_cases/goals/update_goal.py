@@ -1,7 +1,7 @@
 """
 Use Case: UpdateGoal (FR-062, FR-064, FR-065, FR-066).
 
-Edita una meta existente.
+Edita una meta existente (pareja o personal).
 """
 
 import uuid
@@ -9,7 +9,6 @@ import uuid
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.exceptions import (
-    ConflictException,
     NotFoundException,
     ValidationException,
 )
@@ -45,15 +44,17 @@ class UpdateGoalUseCase:
             La meta actualizada.
 
         Raises:
-            ConflictException: Si el usuario no tiene pareja vinculada.
             NotFoundException: Si la meta no existe.
             ValidationException: Si la fecha es inválida o el estado es incorrecto.
         """
         couple = await self.couple_repository.get_active_for_user(user_id)
-        if couple is None or couple.status != CoupleStatus.ACCEPTED:
-            raise ConflictException("No tienes una pareja vinculada.")
+        is_personal = couple is None or couple.status != CoupleStatus.ACCEPTED
 
-        goal = await self.goal_repository.get_by_couple_and_id(couple.id, goal_id)
+        if is_personal:
+            goal = await self.goal_repository.get_by_user_and_id(user_id, goal_id)
+        else:
+            goal = await self.goal_repository.get_by_couple_and_id(couple.id, goal_id)
+
         if goal is None:
             raise NotFoundException("Meta no encontrada.")
 
@@ -82,5 +83,5 @@ class UpdateGoalUseCase:
                 )
 
         await self.session.commit()
-        await self.goal_repository.refresh(goal)
+        await self.session.refresh(goal)
         return goal

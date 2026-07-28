@@ -1,7 +1,7 @@
 """
 Use Case: GetGoalStatistics (FR-069, FR-070, FR-071, FR-072).
 
-Obtiene estadísticas generales de las metas de la pareja.
+Obtiene estadísticas generales de las metas de la pareja o personales.
 """
 
 import uuid
@@ -9,7 +9,6 @@ from datetime import date
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.exceptions import ConflictException
 from app.models.couple import CoupleStatus
 from app.models.goal import GoalStatus
 from app.repositories.couple_repository import CoupleRepository
@@ -20,7 +19,7 @@ from app.schemas.goal import GoalStatisticsResponse
 class GetGoalStatisticsUseCase:
     """Use Case: GetGoalStatistics (FR-069, FR-070, FR-071, FR-072).
 
-    Obtiene estadísticas generales de las metas de la pareja,
+    Obtiene estadísticas generales de las metas de la pareja o personales,
     incluyendo progreso general y metas en/desde fecha.
     """
 
@@ -30,26 +29,27 @@ class GetGoalStatisticsUseCase:
         self.couple_repository = CoupleRepository(session)
 
     async def execute(self, user_id: uuid.UUID) -> GoalStatisticsResponse:
-        """Calcula estadísticas de metas de la pareja.
+        """Calcula estadísticas de metas.
 
         Args:
             user_id: UUID del usuario.
 
         Returns:
             GoalStatisticsResponse con totales, progreso y estado de cada meta.
-
-        Raises:
-            ConflictException: Si el usuario no tiene pareja vinculada.
         """
         couple = await self.couple_repository.get_active_for_user(user_id)
-        if couple is None or couple.status != CoupleStatus.ACCEPTED:
-            raise ConflictException("No tienes una pareja vinculada.")
+        is_personal = couple is None or couple.status != CoupleStatus.ACCEPTED
 
-        stats = await self.goal_repository.get_statistics(couple.id)
-
-        goals, _ = await self.goal_repository.list_by_couple(
-            couple.id, status=GoalStatus.ACTIVE
-        )
+        if is_personal:
+            stats = await self.goal_repository.get_statistics_for_user(user_id)
+            goals, _ = await self.goal_repository.list_by_user(
+                user_id, status=GoalStatus.ACTIVE
+            )
+        else:
+            stats = await self.goal_repository.get_statistics(couple.id)
+            goals, _ = await self.goal_repository.list_by_couple(
+                couple.id, status=GoalStatus.ACTIVE
+            )
 
         goals_on_track = 0
         goals_behind = 0

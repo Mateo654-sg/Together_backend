@@ -102,7 +102,6 @@ class CreateSharedExpenseUseCase:
             await self.debt_repository.create(debt)
 
         await self.session.commit()
-        await self.expense_repository.refresh(expense)
         return expense
 
     def _calculate_debt_amount(

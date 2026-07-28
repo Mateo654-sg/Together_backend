@@ -69,7 +69,6 @@ class UpdateUserProfileUseCase:
             setattr(user, field, value)
 
         await self.session.commit()
-        await self.user_repository.refresh(user)
         return user
 
 

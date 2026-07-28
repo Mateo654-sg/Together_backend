@@ -104,6 +104,41 @@ class GoalContributionRepository(BaseRepository[GoalContribution]):
 
         return items, total
 
+    async def list_by_user(
+        self,
+        user_id: uuid.UUID,
+        *,
+        page: int = 1,
+        limit: int = 20,
+    ) -> tuple[list[GoalContribution], int]:
+        """Lista aportes de todas las metas personales del usuario con paginación."""
+        from app.models.goal import Goal
+
+        base_filter = [
+            Goal.user_id == user_id,
+        ]
+
+        count_stmt = (
+            select(func.count())
+            .select_from(GoalContribution)
+            .join(Goal, GoalContribution.goal_id == Goal.id)
+            .where(*base_filter)
+        )
+        total = (await self.session.execute(count_stmt)).scalar_one()
+
+        stmt = (
+            select(GoalContribution)
+            .join(Goal, GoalContribution.goal_id == Goal.id)
+            .where(*base_filter)
+            .order_by(GoalContribution.contribution_date.desc())
+            .offset((page - 1) * limit)
+            .limit(limit)
+        )
+        result = await self.session.execute(stmt)
+        items = list(result.scalars().all())
+
+        return items, total
+
     async def get_total_by_goal(self, goal_id: uuid.UUID) -> float:
         """Calcula el total aportado a una meta específica.
 

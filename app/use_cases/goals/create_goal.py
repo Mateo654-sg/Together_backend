@@ -1,14 +1,14 @@
 """
 Use Case: CreateGoal (FR-061, FR-064, FR-065, FR-066).
 
-Crea una nueva meta compartida para la pareja.
+Crea una nueva meta compartida para la pareja o personal.
 """
 
 import uuid
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.exceptions import ConflictException, ValidationException
+from app.core.exceptions import ValidationException
 from app.models.couple import CoupleStatus
 from app.models.goal import Goal
 from app.repositories.couple_repository import CoupleRepository
@@ -19,7 +19,7 @@ from app.schemas.goal import CreateGoalRequest
 class CreateGoalUseCase:
     """Use Case: CreateGoal (FR-061, FR-064, FR-065, FR-066).
 
-    Crea una nueva meta compartida para la pareja.
+    Crea una nueva meta compartida para la pareja o personal.
     """
 
     def __init__(self, session: AsyncSession):
@@ -28,7 +28,7 @@ class CreateGoalUseCase:
         self.couple_repository = CoupleRepository(session)
 
     async def execute(self, user_id: uuid.UUID, data: CreateGoalRequest) -> Goal:
-        """Crea una meta compartida.
+        """Crea una meta.
 
         Args:
             user_id: UUID del usuario que crea la meta.
@@ -38,12 +38,10 @@ class CreateGoalUseCase:
             La meta creada.
 
         Raises:
-            ConflictException: Si el usuario no tiene pareja vinculada.
             ValidationException: Si la fecha objetivo es en el pasado.
         """
         couple = await self.couple_repository.get_active_for_user(user_id)
-        if couple is None or couple.status != CoupleStatus.ACCEPTED:
-            raise ConflictException("No tienes una pareja vinculada.")
+        is_personal = couple is None or couple.status != CoupleStatus.ACCEPTED
 
         if data.target_date is not None:
             from datetime import date
@@ -54,7 +52,8 @@ class CreateGoalUseCase:
                 )
 
         goal = Goal(
-            couple_id=couple.id,
+            couple_id=None if is_personal else couple.id,
+            user_id=user_id if is_personal else None,
             title=data.title.strip(),
             description=data.description,
             image=data.image,
@@ -63,5 +62,4 @@ class CreateGoalUseCase:
         )
         await self.goal_repository.create(goal)
         await self.session.commit()
-        await self.goal_repository.refresh(goal)
         return goal

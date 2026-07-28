@@ -10,12 +10,13 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.api.deps import get_client_ip, get_device_info
 from app.db.session import get_db
 from app.schemas.auth import (
+    GoogleLoginRequest,
     LoginRequest,
     RefreshRequest,
     RegisterRequest,
     TokenResponse,
 )
-from app.schemas.user import UserResponse
+from app.use_cases.auth.google_login import GoogleLoginUseCase
 from app.use_cases.auth.login_user import LoginUserUseCase
 from app.use_cases.auth.logout_user import LogoutUserUseCase
 from app.use_cases.auth.refresh_token import RefreshTokenUseCase
@@ -24,12 +25,16 @@ from app.use_cases.auth.register_user import RegisterUserUseCase
 router = APIRouter(prefix="/auth", tags=["Auth"])
 
 
-@router.post("/register", response_model=UserResponse, status_code=status.HTTP_201_CREATED)
-async def register(data: RegisterRequest, db: AsyncSession = Depends(get_db)):
-    """FR-001: Crear una cuenta mediante correo electrónico."""
+@router.post("/register", response_model=TokenResponse, status_code=status.HTTP_201_CREATED)
+async def register(
+    data: RegisterRequest,
+    db: AsyncSession = Depends(get_db),
+    ip: str | None = Depends(get_client_ip),
+    device: str | None = Depends(get_device_info),
+):
+    """FR-001: Crear una cuenta mediante correo electrónico y emitir tokens."""
     use_case = RegisterUserUseCase(db)
-    user = await use_case.execute(data)
-    return user
+    return await use_case.execute(data, ip=ip, device=device)
 
 
 @router.post("/login", response_model=TokenResponse)
@@ -41,6 +46,18 @@ async def login(
 ):
     """FR-002: Iniciar sesión."""
     use_case = LoginUserUseCase(db)
+    return await use_case.execute(data, ip=ip, device=device)
+
+
+@router.post("/google", response_model=TokenResponse)
+async def google_login(
+    data: GoogleLoginRequest,
+    db: AsyncSession = Depends(get_db),
+    ip: str | None = Depends(get_client_ip),
+    device: str | None = Depends(get_device_info),
+):
+    """Login/registro con Google OAuth."""
+    use_case = GoogleLoginUseCase(db)
     return await use_case.execute(data, ip=ip, device=device)
 
 

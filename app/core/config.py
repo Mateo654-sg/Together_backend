@@ -54,9 +54,15 @@ class Settings(BaseSettings):
     # CORS
     cors_origins: list[str] = [
         "http://localhost:3000",
-        "http://localhost:8080",
-        "http://localhost:5000",
+        "http://localhost:8000",
+        "http://localhost:8081",
     ]
+
+    # Google OAuth
+    google_web_client_id: str | None = None
+    google_web_client_secret: str | None = None
+    google_android_client_id: str | None = None
+    google_ios_client_id: str | None = None
 
     # AI (futuro)
     openai_api_key: str | None = None

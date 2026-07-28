@@ -46,5 +46,4 @@ class MarkNotificationReadUseCase:
 
         notification.is_read = True
         await self.session.commit()
-        await self.notification_repository.refresh(notification)
         return NotificationResponse.model_validate(notification)

@@ -1,14 +1,14 @@
 """
 Use Case: DeleteGoal (FR-063).
 
-Elimina (soft delete) una meta existente.
+Elimina (soft delete) una meta existente (pareja o personal).
 """
 
 import uuid
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.exceptions import ConflictException, NotFoundException
+from app.core.exceptions import NotFoundException
 from app.models.couple import CoupleStatus
 from app.repositories.couple_repository import CoupleRepository
 from app.repositories.goal_repository import GoalRepository
@@ -33,14 +33,16 @@ class DeleteGoalUseCase:
             goal_id: UUID de la meta a eliminar.
 
         Raises:
-            ConflictException: Si el usuario no tiene pareja vinculada.
             NotFoundException: Si la meta no existe.
         """
         couple = await self.couple_repository.get_active_for_user(user_id)
-        if couple is None or couple.status != CoupleStatus.ACCEPTED:
-            raise ConflictException("No tienes una pareja vinculada.")
+        is_personal = couple is None or couple.status != CoupleStatus.ACCEPTED
 
-        goal = await self.goal_repository.get_by_couple_and_id(couple.id, goal_id)
+        if is_personal:
+            goal = await self.goal_repository.get_by_user_and_id(user_id, goal_id)
+        else:
+            goal = await self.goal_repository.get_by_couple_and_id(couple.id, goal_id)
+
         if goal is None:
             raise NotFoundException("Meta no encontrada.")
 

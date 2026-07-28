@@ -50,5 +50,4 @@ class CreateCategoryUseCase:
         )
         await self.repository.create(category)
         await self.session.commit()
-        await self.repository.refresh(category)
         return category

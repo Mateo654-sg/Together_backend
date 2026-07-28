@@ -52,5 +52,4 @@ class PayDebtUseCase:
 
         debt.status = DebtStatus.PAID
         await self.session.commit()
-        await self.debt_repository.refresh(debt)
         return debt

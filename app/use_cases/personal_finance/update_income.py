@@ -65,5 +65,4 @@ class UpdateIncomeUseCase:
             income.income_date = data.income_date
 
         await self.session.commit()
-        await self.repository.refresh(income)
         return income

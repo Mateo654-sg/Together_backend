@@ -50,5 +50,4 @@ class CreateReminderUseCase:
         )
         await self.reminder_repository.create(reminder)
         await self.session.commit()
-        await self.reminder_repository.refresh(reminder)
         return reminder

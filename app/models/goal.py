@@ -20,6 +20,7 @@ from app.db.base import Base, TimestampMixin, UUIDMixin
 if TYPE_CHECKING:
     from app.models.couple import Couple
     from app.models.goal_contribution import GoalContribution
+    from app.models.user import User
 
 
 class GoalStatus(str, enum.Enum):
@@ -31,8 +32,11 @@ class GoalStatus(str, enum.Enum):
 class Goal(Base, UUIDMixin, TimestampMixin):
     __tablename__ = "goals"
 
-    couple_id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True), ForeignKey("couples.id", ondelete="CASCADE"), nullable=False
+    couple_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("couples.id", ondelete="CASCADE"), nullable=True
+    )
+    user_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=True
     )
     title: Mapped[str] = mapped_column(String(255), nullable=False)
     description: Mapped[str | None] = mapped_column(Text, nullable=True)
@@ -50,6 +54,7 @@ class Goal(Base, UUIDMixin, TimestampMixin):
 
     # Relationships
     couple: Mapped["Couple"] = relationship()
+    user: Mapped["User"] = relationship()
     contributions: Mapped[list["GoalContribution"]] = relationship(
         back_populates="goal"
     )

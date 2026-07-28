@@ -56,5 +56,4 @@ class UpdateCategoryUseCase:
             category.color = data.color
 
         await self.session.commit()
-        await self.repository.refresh(category)
         return category

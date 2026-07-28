@@ -52,7 +52,6 @@ class CreateInvitationUseCase:
         couple = Couple(partner_one_id=user_id, invitation_code=code)
         await self.couple_repository.create(couple)
         await self.session.commit()
-        await self.couple_repository.refresh(couple)
         return couple
 
     async def _generate_unique_code(self) -> str:

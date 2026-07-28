@@ -33,7 +33,8 @@ class GoalResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
     id: uuid.UUID
-    couple_id: uuid.UUID
+    couple_id: uuid.UUID | None
+    user_id: uuid.UUID | None = None
     title: str
     description: str | None
     image: str | None
