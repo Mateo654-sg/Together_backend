@@ -47,6 +47,7 @@ class CreateCategoryUseCase:
             name=data.name.strip(),
             icon=data.icon,
             color=data.color,
+            type=data.type if data.type in ("expense", "income") else "expense",
         )
         await self.repository.create(category)
         await self.session.commit()

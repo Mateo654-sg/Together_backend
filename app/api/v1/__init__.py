@@ -20,6 +20,7 @@ from app.api.v1.reports import router as reports_router
 from app.api.v1.shared_expenses import router as shared_expenses_router
 from app.api.v1.shared_incomes import router as shared_incomes_router
 from app.api.v1.statistics import router as statistics_router
+from app.api.v1.upload import router as upload_router
 from app.api.v1.users import router as users_router
 
 api_router = APIRouter(prefix="/api/v1")
@@ -42,3 +43,4 @@ api_router.include_router(shared_expenses_router)
 api_router.include_router(shared_incomes_router)
 api_router.include_router(statistics_router)
 api_router.include_router(debts_router)
+api_router.include_router(upload_router)

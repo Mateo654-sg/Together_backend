@@ -28,6 +28,7 @@ class PersonalCategory(Base, UUIDMixin, TimestampMixin):
     name: Mapped[str] = mapped_column(String(100), nullable=False)
     icon: Mapped[str | None] = mapped_column(String(50), nullable=True)
     color: Mapped[str | None] = mapped_column(String(7), nullable=True)
+    type: Mapped[str] = mapped_column(String(20), nullable=False, server_default="expense")
 
     # Relationships
     user: Mapped["User"] = relationship(back_populates="personal_categories")

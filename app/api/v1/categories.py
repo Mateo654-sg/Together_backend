@@ -4,8 +4,9 @@ Router: /api/v1/categories
 Categorías personales para clasificar gastos e ingresos (FR-024).
 """
 import uuid
+from typing import Optional
 
-from fastapi import APIRouter, Depends, status
+from fastapi import APIRouter, Depends, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import get_current_user
@@ -26,12 +27,13 @@ router = APIRouter(prefix="/categories", tags=["Categories"])
 
 @router.get("", response_model=list[CategoryResponse])
 async def list_categories(
+    type: Optional[str] = Query(None, description="Filter by type: expense or income"),
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
-    """Lista todas las categorías personales del usuario autenticado."""
+    """Lista todas las categorías personales del usuario autenticado, opcionalmente filtradas por tipo."""
     use_case = ListCategoriesUseCase(db)
-    return await use_case.execute(current_user.id)
+    return await use_case.execute(current_user.id, category_type=type)
 
 
 @router.post("", response_model=CategoryResponse, status_code=status.HTTP_201_CREATED)

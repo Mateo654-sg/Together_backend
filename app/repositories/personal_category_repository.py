@@ -23,21 +23,26 @@ class PersonalCategoryRepository(BaseRepository[PersonalCategory]):
     def __init__(self, session: AsyncSession):
         super().__init__(session, PersonalCategory)
 
-    async def list_by_user(self, user_id: uuid.UUID) -> list[PersonalCategory]:
+    async def list_by_user(self, user_id: uuid.UUID, category_type: str | None = None) -> list[PersonalCategory]:
         """Lista todas las categorías personales del usuario ordenadas alfabéticamente.
 
         Args:
             user_id: UUID del usuario propietario.
+            category_type: Tipo de categoría a filtrar ('expense' o 'income'). None para todas.
 
         Returns:
             Lista de categorías activas del usuario.
         """
+        filters = [
+            PersonalCategory.user_id == user_id,
+            PersonalCategory.deleted_at.is_(None),
+        ]
+        if category_type:
+            filters.append(PersonalCategory.type == category_type)
+
         stmt = (
             select(PersonalCategory)
-            .where(
-                PersonalCategory.user_id == user_id,
-                PersonalCategory.deleted_at.is_(None),
-            )
+            .where(*filters)
             .order_by(PersonalCategory.name)
         )
         result = await self.session.execute(stmt)

@@ -23,18 +23,18 @@ from app.repositories.user_repository import UserRepository
 from app.schemas.auth import GoogleLoginRequest, TokenResponse
 
 DEFAULT_CATEGORIES = [
-    ("Alimentación", "UtensilsCrossed", "#FF6B6B"),
-    ("Transporte", "Car", "#4ECDC4"),
-    ("Entretenimiento", "Gamepad2", "#A78BFA"),
-    ("Servicios", "Wifi", "#F59E0B"),
-    ("Salud", "Heart", "#EF4444"),
-    ("Educación", "BookOpen", "#3B82F6"),
-    ("Ropa", "Shirt", "#EC4899"),
-    ("Otros", "MoreHorizontal", "#6B7280"),
-    ("Salario", "Banknote", "#10B981"),
-    ("Freelance", "Laptop", "#8B5CF6"),
-    ("Inversiones", "TrendingUp", "#06B6D4"),
-    ("Regalos", "Gift", "#F97316"),
+    ("Alimentación", "UtensilsCrossed", "#FF6B6B", "expense"),
+    ("Transporte", "Car", "#4ECDC4", "expense"),
+    ("Entretenimiento", "Gamepad2", "#A78BFA", "expense"),
+    ("Servicios", "Wifi", "#F59E0B", "expense"),
+    ("Salud", "Heart", "#EF4444", "expense"),
+    ("Educación", "BookOpen", "#3B82F6", "expense"),
+    ("Ropa", "Shirt", "#EC4899", "expense"),
+    ("Otros", "MoreHorizontal", "#6B7280", "expense"),
+    ("Salario", "Banknote", "#10B981", "income"),
+    ("Freelance", "Laptop", "#8B5CF6", "income"),
+    ("Inversiones", "TrendingUp", "#06B6D4", "income"),
+    ("Regalos", "Gift", "#F97316", "income"),
 ]
 
 GOOGLE_TOKENINFO_URL = "https://oauth2.googleapis.com/tokeninfo"
@@ -94,12 +94,13 @@ class GoogleLoginUseCase:
             settings_obj = UserSettings(user_id=user.id)
             self.session.add(settings_obj)
 
-            for name, icon, color in DEFAULT_CATEGORIES:
+            for name, icon, color, cat_type in DEFAULT_CATEGORIES:
                 category = PersonalCategory(
                     user_id=user.id,
                     name=name,
                     icon=icon,
                     color=color,
+                    type=cat_type,
                 )
                 await self.category_repository.create(category)
         else:

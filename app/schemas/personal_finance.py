@@ -16,12 +16,14 @@ class CreateCategoryRequest(BaseModel):
     name: str = Field(..., min_length=1, max_length=100)
     icon: str | None = Field(None, max_length=50)
     color: str | None = Field(None, max_length=7)
+    type: str = Field("expense", max_length=20)
 
 
 class UpdateCategoryRequest(BaseModel):
     name: str | None = Field(None, min_length=1, max_length=100)
     icon: str | None = Field(None, max_length=50)
     color: str | None = Field(None, max_length=7)
+    type: str | None = Field(None, max_length=20)
 
 
 class CategoryResponse(BaseModel):
@@ -31,6 +33,7 @@ class CategoryResponse(BaseModel):
     name: str
     icon: str | None
     color: str | None
+    type: str
     created_at: datetime
 
 

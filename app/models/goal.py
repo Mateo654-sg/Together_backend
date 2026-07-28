@@ -40,7 +40,7 @@ class Goal(Base, UUIDMixin, TimestampMixin):
     )
     title: Mapped[str] = mapped_column(String(255), nullable=False)
     description: Mapped[str | None] = mapped_column(Text, nullable=True)
-    image: Mapped[str | None] = mapped_column(String(500), nullable=True)
+    image: Mapped[str | None] = mapped_column(Text, nullable=True)
     target_amount: Mapped[Decimal] = mapped_column(Numeric(12, 2), nullable=False)
     current_amount: Mapped[Decimal] = mapped_column(
         Numeric(12, 2), default=Decimal("0.00"), nullable=False

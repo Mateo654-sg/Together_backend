@@ -15,7 +15,7 @@ from pydantic import BaseModel, ConfigDict, Field
 class CreateGoalRequest(BaseModel):
     title: str = Field(..., min_length=1, max_length=255)
     description: str | None = None
-    image: str | None = Field(None, max_length=500)
+    image: str | None = None
     target_amount: Decimal = Field(..., gt=0, decimal_places=2)
     target_date: date | None = None
 
@@ -23,7 +23,7 @@ class CreateGoalRequest(BaseModel):
 class UpdateGoalRequest(BaseModel):
     title: str | None = Field(None, min_length=1, max_length=255)
     description: str | None = None
-    image: str | None = Field(None, max_length=500)
+    image: str | None = None
     target_amount: Decimal | None = Field(None, gt=0, decimal_places=2)
     target_date: date | None = None
     status: str | None = None

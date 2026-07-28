@@ -54,6 +54,8 @@ class UpdateCategoryUseCase:
             category.icon = data.icon
         if data.color is not None:
             category.color = data.color
+        if data.type is not None and data.type in ("expense", "income"):
+            category.type = data.type
 
         await self.session.commit()
         return category

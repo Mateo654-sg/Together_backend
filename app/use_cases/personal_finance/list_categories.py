@@ -22,13 +22,14 @@ class ListCategoriesUseCase:
         self.session = session
         self.repository = PersonalCategoryRepository(session)
 
-    async def execute(self, user_id: uuid.UUID) -> list[PersonalCategory]:
+    async def execute(self, user_id: uuid.UUID, category_type: str | None = None) -> list[PersonalCategory]:
         """Lista todas las categorías personales del usuario.
 
         Args:
             user_id: UUID del usuario propietario.
+            category_type: Tipo de categoría a filtrar ('expense' o 'income'). None para todas.
 
         Returns:
             Lista de categorías personales ordenadas alfabéticamente.
         """
-        return await self.repository.list_by_user(user_id)
+        return await self.repository.list_by_user(user_id, category_type=category_type)
