@@ -58,6 +58,9 @@ async def get_current_user(
     if user is None or not user.is_active:
         raise UnauthorizedException("Usuario no válido.")
 
+    if not user.is_verified:
+        raise UnauthorizedException("Cuenta no verificada. Revisa tu correo electrónico.")
+
     return user
 
 

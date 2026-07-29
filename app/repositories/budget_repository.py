@@ -147,15 +147,61 @@ class BudgetRepository(BaseRepository[Budget]):
             incluyendo budget_id, category_id, amount, spent, percentage,
             level, month y year.
         """
+        from app.models.personal_expense import PersonalExpense
+        from sqlalchemy import extract
+
         budgets, _ = await self.list_by_user(
             user_id, page=1, limit=1000, month=month, year=year
         )
+        if not budgets:
+            return []
+
+        category_filter = [
+            b.category_id for b in budgets if b.category_id is not None
+        ]
+        months = {b.month for b in budgets if b.month}
+        years = {b.year for b in budgets if b.year}
+
+        expense_filter = [
+            PersonalExpense.user_id == user_id,
+            PersonalExpense.deleted_at.is_(None),
+        ]
+        if category_filter:
+            expense_filter.append(
+                PersonalExpense.category_id.in_(category_filter)
+            )
+        if months and years:
+            expense_filter.append(
+                extract("month", PersonalExpense.expense_date).in_(months)
+            )
+            expense_filter.append(
+                extract("year", PersonalExpense.expense_date).in_(years)
+            )
+
+        spent_stmt = select(
+            PersonalExpense.category_id,
+            extract("month", PersonalExpense.expense_date).label("month"),
+            extract("year", PersonalExpense.expense_date).label("year"),
+            func.coalesce(func.sum(PersonalExpense.amount), 0).label("total"),
+        ).where(*expense_filter).group_by(
+            PersonalExpense.category_id,
+            extract("month", PersonalExpense.expense_date),
+            extract("year", PersonalExpense.expense_date),
+        )
+
+        spent_result = await self.session.execute(spent_stmt)
+        spent_map: dict[tuple, Decimal] = {}
+        for row in spent_result:
+            key = (row.category_id, int(row.month), int(row.year))
+            spent_map[key] = Decimal(str(row.total))
 
         alerts = []
         for budget in budgets:
-            spent = await self._get_spent_amount(user_id, budget)
             if budget.amount <= 0:
                 continue
+
+            key = (budget.category_id, budget.month, budget.year)
+            spent = spent_map.get(key, Decimal("0"))
 
             percentage = float(spent / budget.amount * 100)
 
@@ -182,43 +228,3 @@ class BudgetRepository(BaseRepository[Budget]):
             )
 
         return alerts
-
-    async def _get_spent_amount(self, user_id: uuid.UUID, budget: Budget) -> Decimal:
-        """Calcula el monto total gastado por el usuario para un presupuesto.
-
-        Suma todos los gastos personales del usuario que coinciden con la
-        categoría y período del presupuesto.
-
-        Args:
-            user_id: UUID del usuario.
-            budget: Instancia del presupuesto a evaluar.
-
-        Returns:
-            Monto total gastado como Decimal.
-        """
-        from app.models.personal_expense import PersonalExpense
-
-        base_filter = [
-            PersonalExpense.user_id == user_id,
-            PersonalExpense.deleted_at.is_(None),
-        ]
-
-        if budget.category_id is not None:
-            base_filter.append(PersonalExpense.category_id == budget.category_id)
-
-        if budget.month and budget.year:
-            from sqlalchemy import extract
-
-            base_filter.append(
-                extract("month", PersonalExpense.expense_date) == budget.month
-            )
-            base_filter.append(
-                extract("year", PersonalExpense.expense_date) == budget.year
-            )
-
-        stmt = select(func.coalesce(func.sum(PersonalExpense.amount), 0)).where(
-            *base_filter
-        )
-
-        result = await self.session.execute(stmt)
-        return Decimal(str(result.scalar_one()))
