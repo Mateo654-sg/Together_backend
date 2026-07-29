@@ -5,15 +5,18 @@ Orquesta las consultas de IA a través del AI Gateway.
 """
 
 import time
+import asyncio
 import uuid
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.ai_history import AIHistory
 from app.repositories.ai_history_repository import AIHistoryRepository
+from app.core.config import settings
 from app.services.ai.base import AIProvider
 from app.services.ai.context_builder import AIContextBuilder
 from app.services.ai.mock_provider import MockAIProvider
+from app.services.ai.openai_provider import OpenAIProvider
 
 
 class AIService:
@@ -25,7 +28,12 @@ class AIService:
 
     def __init__(self, session: AsyncSession, provider: AIProvider | None = None):
         self.session = session
-        self.provider = provider or MockAIProvider()
+        if provider:
+            self.provider = provider
+        elif settings.openai_api_key:
+            self.provider = OpenAIProvider(settings.openai_api_key)
+        else:
+            self.provider = MockAIProvider()
         self.context_builder = AIContextBuilder(session)
         self.history_repository = AIHistoryRepository(session)
 
@@ -44,9 +52,9 @@ class AIService:
         """
         context = await self.context_builder.build_context(user_id)
 
-        start_time = time.time()
+        start_time = time.monotonic()
         result = await self.provider.generate(question, context)
-        response_time_ms = int((time.time() - start_time) * 1000)
+        response_time_ms = int((time.monotonic() - start_time) * 1000)
 
         history = AIHistory(
             user_id=user_id,

@@ -9,6 +9,7 @@ import uuid
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.exceptions import NotFoundException
 from app.models.user_settings import UserSettings
 from app.repositories.user_repository import UserRepository
 
@@ -38,8 +39,6 @@ class GetSettingsUseCase:
         """
         user = await self.user_repository.get_by_id(user_id)
         if user is None:
-            from app.core.exceptions import NotFoundException
-
             raise NotFoundException("Usuario no encontrado.")
 
         if user.settings is None:

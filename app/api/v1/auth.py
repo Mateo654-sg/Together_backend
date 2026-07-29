@@ -48,7 +48,9 @@ def _clear_refresh_cookie(response: Response) -> None:
 
 
 @router.post("/register", response_model=TokenResponse, status_code=status.HTTP_201_CREATED)
+@limiter.limit("5/minute")
 async def register(
+    request: Request,
     data: RegisterRequest,
     db: AsyncSession = Depends(get_db),
     ip: str | None = Depends(get_client_ip),
@@ -71,7 +73,9 @@ async def register(
 
 
 @router.post("/login", response_model=TokenResponse)
+@limiter.limit("10/minute")
 async def login(
+    request: Request,
     data: LoginRequest,
     db: AsyncSession = Depends(get_db),
     ip: str | None = Depends(get_client_ip),
@@ -94,7 +98,9 @@ async def login(
 
 
 @router.post("/google", response_model=TokenResponse)
+@limiter.limit("5/minute")
 async def google_login(
+    request: Request,
     data: GoogleLoginRequest,
     db: AsyncSession = Depends(get_db),
     ip: str | None = Depends(get_client_ip),
@@ -117,6 +123,7 @@ async def google_login(
 
 
 @router.post("/refresh", response_model=TokenResponse)
+@limiter.limit("10/minute")
 async def refresh(
     request: Request,
     db: AsyncSession = Depends(get_db),
@@ -165,7 +172,8 @@ async def logout(
 
 
 @router.post("/forgot-password", status_code=status.HTTP_204_NO_CONTENT)
-async def forgot_password(data: ForgotPasswordRequest, db: AsyncSession = Depends(get_db)):
+@limiter.limit("3/minute")
+async def forgot_password(request: Request, data: ForgotPasswordRequest, db: AsyncSession = Depends(get_db)):
     """FR-003: Recuperar contraseña (envío de correo con token).
 
     Se retorna 204 siempre, exista o no el correo, para evitar
@@ -177,7 +185,8 @@ async def forgot_password(data: ForgotPasswordRequest, db: AsyncSession = Depend
 
 
 @router.post("/reset-password", status_code=status.HTTP_204_NO_CONTENT)
-async def reset_password(data: ResetPasswordRequest, db: AsyncSession = Depends(get_db)):
+@limiter.limit("5/minute")
+async def reset_password(request: Request, data: ResetPasswordRequest, db: AsyncSession = Depends(get_db)):
     """FR-003: Restablecer contraseña mediante token."""
     use_case = ResetPasswordUseCase(db)
     await use_case.execute(data.token, data.new_password)

@@ -1,5 +1,5 @@
 import uuid
-from datetime import datetime
+from datetime import datetime, timezone
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -20,7 +20,7 @@ class PasswordResetTokenRepository:
         stmt = select(PasswordResetToken).where(
             PasswordResetToken.token_hash == token_hash,
             PasswordResetToken.used == False,
-            PasswordResetToken.expires_at > datetime.now(),
+            PasswordResetToken.expires_at > datetime.now(timezone.utc),
         )
         result = await self.session.execute(stmt)
         return result.scalar_one_or_none()

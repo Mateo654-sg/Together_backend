@@ -8,6 +8,7 @@ invalidado inmediatamente.
 
 from datetime import datetime, timedelta, timezone
 
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import settings as app_settings
@@ -50,8 +51,14 @@ class RefreshTokenUseCase:
         jti = payload.get("jti")
         user_id = payload.get("sub")
 
-        session_obj = await self.session_repository.get_by_jti(jti)
-        if session_obj is None or not self.session_repository.is_valid(session_obj):
+        stmt = select(SessionModel).where(
+            SessionModel.refresh_token_jti == jti,
+            SessionModel.deleted_at.is_(None),
+        ).with_for_update()
+        session_obj = (await self.session.execute(stmt)).scalar_one_or_none()
+        if session_obj is None or session_obj.is_revoked or session_obj.expires_at <= datetime.now(timezone.utc):
+            if session_obj is not None:
+                await self.session_repository.revoke(session_obj)
             raise InvalidTokenException("La sesión ya no es válida.")
 
         user = await self.user_repository.get_by_id(user_id)

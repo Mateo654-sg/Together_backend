@@ -18,6 +18,7 @@ email-validator==2.2.0
 google-auth==2.35.0
 requests==2.34.2
 slowapi==0.1.9
+openai==1.51.0
 
 # Testing
 pytest==8.3.3

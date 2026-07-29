@@ -26,32 +26,22 @@ class AIAnalyzeUseCase:
     async def execute(
         self, user_id: uuid.UUID, data: AIAnalyzeRequest
     ) -> AIAnalyzeResponse:
-        """Ejecuta un análisis financiero con IA.
-
-        Args:
-            user_id: UUID del usuario.
-            data: Datos de la solicitud (analysis_type: patterns, anomalies, comparison, categories).
-
-        Returns:
-            AIAnalyzeResponse con el análisis y lista de insights.
-        """
         prompts = {
-            "patterns": "Analiza mis patrones de gasto del último mes. ¿Qué categorías dominan? ¿Hay gastos repetitivos?",
-            "anomalies": "Detecta gastos anómalos o inusuales en mis registros recientes.",
-            "comparison": "Compara mis gastos del mes actual con el mes anterior.",
-            "categories": "Analiza la distribución de mis gastos por categoría.",
+            "patterns": "Analiza mis patrones de gasto del último mes. ¿Qué categorías dominan? ¿Hay gastos repetitivos? Dame 3 insights específicos basados en mis datos.",
+            "anomalies": "Detecta gastos anómalos o inusuales en mis registros recientes. Dame 3 insights específicos.",
+            "comparison": "Compara mis gastos del mes actual con el mes anterior. Dame 3 diferencias clave.",
+            "categories": "Analiza la distribución de mis gastos por categoría. Dame 3 insights sobre mis patrones de gasto.",
         }
 
         question = prompts.get(
-            data.analysis_type, f"Analiza mis finanzas: {data.analysis_type}"
+            data.analysis_type, f"Analiza mis finanzas: {data.analysis_type}. Dame 3 insights específicos."
         )
         result = await self.ai_service.chat(user_id, question, endpoint="analyze")
 
-        insights = [
-            "Tus gastos en alimentación representan el 35% del total.",
-            "Los viernes tienes un 28% más de gastos que otros días.",
-            "Has reducido gastos de transporte un 12% este mes.",
-        ]
+        lines = [l.strip("- ").strip() for l in result["answer"].split("\n") if l.strip()]
+        insights = [l for l in lines if len(l) > 10][:5]
+        if not insights:
+            insights = ["Análisis completado. Revisa los detalles en el reporte."]
 
         return AIAnalyzeResponse(
             analysis_type=data.analysis_type,

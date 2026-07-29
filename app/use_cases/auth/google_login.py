@@ -35,7 +35,7 @@ ALLOWED_AUDIENCES = {
     app_settings.google_web_client_id,
     app_settings.google_android_client_id,
     app_settings.google_ios_client_id,
-}
+} - {None}
 
 
 class GoogleLoginUseCase:
@@ -59,7 +59,7 @@ class GoogleLoginUseCase:
                 detail=f"Token de Google inválido o expirado: {e}",
             )
 
-        if info.get("aud") not in {a for a in ALLOWED_AUDIENCES if a}:
+        if info.get("aud") not in ALLOWED_AUDIENCES:
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Token de Google no emitido para esta aplicación.",

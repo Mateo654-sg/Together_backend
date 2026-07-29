@@ -29,30 +29,17 @@ class UpdateExpenseUseCase:
     async def execute(
         self, user_id: uuid.UUID, expense_id: uuid.UUID, data: UpdateExpenseRequest
     ) -> PersonalExpense:
-        """Actualiza un gasto personal existente.
-
-        Args:
-            user_id: UUID del usuario propietario.
-            expense_id: UUID del gasto a actualizar.
-            data: Datos a actualizar (parciales).
-
-        Returns:
-            El gasto personal actualizado.
-
-        Raises:
-            NotFoundException: Si el gasto no existe.
-            ValidationException: Si la categoría especificada no existe.
-        """
         expense = await self.repository.get_by_user_and_id(user_id, expense_id)
         if expense is None:
             raise NotFoundException("Gasto no encontrado.")
 
-        if data.category_id is not None:
-            category = await self.category_repository.get_by_user_and_id(
-                user_id, data.category_id
-            )
-            if category is None:
-                raise ValidationException("La categoría especificada no existe.")
+        if "category_id" in data.model_dump(exclude_unset=True):
+            if data.category_id is not None:
+                category = await self.category_repository.get_by_user_and_id(
+                    user_id, data.category_id
+                )
+                if category is None:
+                    raise ValidationException("La categoría especificada no existe.")
             expense.category_id = data.category_id
 
         if data.amount is not None:

@@ -1,13 +1,11 @@
 import hashlib
 
 from fastapi import HTTPException, status
-from passlib.context import CryptContext
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.security import hash_password
 from app.repositories.password_reset_token_repository import PasswordResetTokenRepository
 from app.repositories.user_repository import UserRepository
-
-pwd_context = CryptContext(schemes=["argon2"], deprecated="auto")
 
 
 class ResetPasswordUseCase:
@@ -33,6 +31,6 @@ class ResetPasswordUseCase:
                 detail="Token inválido o expirado.",
             )
 
-        user.password_hash = pwd_context.hash(new_password)
+        user.password_hash = hash_password(new_password)
         await self.token_repository.mark_used(reset_token)
         await self.session.commit()

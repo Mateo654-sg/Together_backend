@@ -4,7 +4,8 @@ Use Cases del módulo Users: consultar y editar perfil (FR-006).
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.exceptions import NotFoundException
+from app.core.exceptions import InvalidCredentialsException, NotFoundException
+from app.core.security import verify_password
 from app.models.user import User
 from app.repositories.user_repository import UserRepository
 from app.schemas.user import UpdateUserRequest
@@ -93,9 +94,6 @@ class DeleteUserUseCase:
             NotFoundException: Si el usuario no existe.
             InvalidCredentialsException: Si la contraseña es incorrecta.
         """
-        from app.core.exceptions import InvalidCredentialsException
-        from app.core.security import verify_password
-
         user = await self.user_repository.get_by_id(user_id)
         if user is None:
             raise NotFoundException("Usuario no encontrado.")

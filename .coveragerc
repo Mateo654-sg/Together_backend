@@ -1,5 +1,5 @@
 [run]
-concurrency = greenlet
+concurrency = asyncio
 source = app
 omit =
     app/__init__.py

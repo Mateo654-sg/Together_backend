@@ -19,13 +19,15 @@ class SecurityHeadersMiddleware:
                 headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains"
                 headers["Content-Security-Policy"] = (
                     "default-src 'self'; "
-                    "script-src 'self' 'unsafe-inline' https://accounts.google.com; "
+                    "script-src 'self' https://accounts.google.com; "
                     "style-src 'self' 'unsafe-inline'; "
                     "frame-src https://accounts.google.com; "
                     "connect-src 'self'; "
                     "img-src 'self' data:; "
                     "object-src 'none'"
                 )
+                headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
+                headers["Permissions-Policy"] = "camera=(), microphone=(), geolocation=()"
             await send(message)
 
         await self.app(scope, receive, send_wrapper)

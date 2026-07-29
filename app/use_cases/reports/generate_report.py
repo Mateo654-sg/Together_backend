@@ -10,6 +10,7 @@ from datetime import datetime, timezone
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.exceptions import ValidationException
 from app.models.report import Report, ReportFormat, ReportStatus, ReportType
 from app.repositories.report_repository import ReportRepository
 from app.schemas.report import GenerateReportRequest
@@ -41,8 +42,6 @@ class GenerateReportUseCase:
         try:
             report_type = ReportType(data.report_type)
         except ValueError:
-            from app.core.exceptions import ValidationException
-
             raise ValidationException(
                 f"Tipo de reporte inválido. Permitidos: {[t.value for t in ReportType]}"
             )
@@ -50,8 +49,6 @@ class GenerateReportUseCase:
         try:
             report_format = ReportFormat(data.format)
         except ValueError:
-            from app.core.exceptions import ValidationException
-
             raise ValidationException(
                 f"Formato inválido. Permitidos: {[f.value for f in ReportFormat]}"
             )

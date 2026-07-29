@@ -9,7 +9,7 @@ import uuid
 from decimal import Decimal
 from typing import TYPE_CHECKING
 
-from sqlalchemy import ForeignKey, Integer, Numeric
+from sqlalchemy import ForeignKey, Integer, Numeric, UniqueConstraint
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -22,6 +22,9 @@ if TYPE_CHECKING:
 
 class Budget(Base, UUIDMixin, TimestampMixin):
     __tablename__ = "budgets"
+    __table_args__ = (
+        UniqueConstraint('user_id', 'category_id', 'month', 'year', name='uq_budget_user_category_month'),
+    )
 
     user_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False
