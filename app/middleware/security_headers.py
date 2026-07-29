@@ -26,6 +26,6 @@ class SecurityHeadersMiddleware:
                     "img-src 'self' data:; "
                     "object-src 'none'"
                 )
-            await self.app(scope, receive, send_wrapper)
+            await send(message)
 
         await self.app(scope, receive, send_wrapper)
