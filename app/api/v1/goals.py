@@ -4,9 +4,12 @@ Router: /api/v1/goals
 Metas compartidas de la pareja (FR-061 a FR-072).
 """
 import uuid
+from datetime import date
+from decimal import Decimal
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, Query, status
+from pydantic import BaseModel, Field
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import get_current_user
@@ -26,7 +29,9 @@ from app.schemas.goal import (
 from app.use_cases.goals.contribute_to_goal import ContributeToGoalUseCase
 from app.use_cases.goals.create_goal import CreateGoalUseCase
 from app.use_cases.goals.delete_goal import DeleteGoalUseCase
+from app.use_cases.goals.get_goal import GetGoalUseCase
 from app.use_cases.goals.get_goal_statistics import GetGoalStatisticsUseCase
+from app.use_cases.goals.list_goal_contributions import ListGoalContributionsUseCase
 from app.use_cases.goals.list_goal_history import ListGoalHistoryUseCase
 from app.use_cases.goals.list_goals import ListGoalsUseCase
 from app.use_cases.goals.update_goal import UpdateGoalUseCase
@@ -60,6 +65,17 @@ async def create_goal(
     """FR-061: Crea una nueva meta compartida."""
     use_case = CreateGoalUseCase(db)
     return await use_case.execute(current_user.id, data)
+
+
+@router.get("/{goal_id}", response_model=GoalResponse)
+async def get_goal(
+    goal_id: uuid.UUID,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Obtiene una meta por ID con progreso y predicciones."""
+    use_case = GetGoalUseCase(db)
+    return await use_case.execute(current_user.id, goal_id)
 
 
 @router.put("/{goal_id}", response_model=GoalResponse)
@@ -98,6 +114,45 @@ async def contribute_to_goal(
     """FR-067: Registrar un aporte a una meta."""
     use_case = ContributeToGoalUseCase(db)
     return await use_case.execute(current_user.id, data)
+
+
+class _ContributeBody(BaseModel):
+    amount: Decimal = Field(..., gt=0, decimal_places=2)
+    contribution_date: date | None = None
+
+
+@router.post(
+    "/{goal_id}/contributions",
+    response_model=ContributionResponse,
+    status_code=status.HTTP_201_CREATED,
+)
+async def contribute_to_goal_nested(
+    goal_id: uuid.UUID,
+    data: _ContributeBody,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """FR-067: Registrar un aporte a una meta (ruta anidada)."""
+    contribution_data = CreateContributionRequest(
+        goal_id=goal_id,
+        amount=data.amount,
+        contribution_date=data.contribution_date,
+    )
+    use_case = ContributeToGoalUseCase(db)
+    return await use_case.execute(current_user.id, contribution_data)
+
+
+@router.get("/{goal_id}/contributions", response_model=ContributionListResponse)
+async def list_goal_contributions(
+    goal_id: uuid.UUID,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+    page: Annotated[int, Query(ge=1)] = 1,
+    limit: Annotated[int, Query(ge=1, le=100)] = 20,
+):
+    """Lista los aportes de una meta específica."""
+    use_case = ListGoalContributionsUseCase(db)
+    return await use_case.execute(goal_id, page=page, limit=limit)
 
 
 @router.get("/history", response_model=ContributionListResponse)

@@ -21,6 +21,7 @@ from app.schemas.personal_finance import (
 )
 from app.use_cases.personal_finance.create_income import CreateIncomeUseCase
 from app.use_cases.personal_finance.delete_income import DeleteIncomeUseCase
+from app.use_cases.personal_finance.get_income import GetIncomeUseCase
 from app.use_cases.personal_finance.list_incomes import ListIncomesUseCase
 from app.use_cases.personal_finance.update_income import UpdateIncomeUseCase
 
@@ -58,6 +59,17 @@ async def create_income(
     """FR-019: Registra un ingreso personal nuevo."""
     use_case = CreateIncomeUseCase(db)
     return await use_case.execute(current_user.id, data)
+
+
+@router.get("/{income_id}", response_model=IncomeResponse)
+async def get_income(
+    income_id: uuid.UUID,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Obtiene un ingreso personal por ID."""
+    use_case = GetIncomeUseCase(db)
+    return await use_case.execute(current_user.id, income_id)
 
 
 @router.put("/{income_id}", response_model=IncomeResponse)
