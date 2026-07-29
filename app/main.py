@@ -12,10 +12,15 @@ from fastapi import FastAPI, Request, status
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
+from slowapi import _rate_limit_exceeded_handler
+from slowapi.errors import RateLimitExceeded
+from slowapi.middleware import SlowAPIMiddleware
 
 from app.api.v1 import api_router
 from app.core.config import settings
 from app.core.exceptions import AppException
+from app.core.rate_limit import limiter
+from app.middleware.security_headers import SecurityHeadersMiddleware
 
 app = FastAPI(
     title=settings.app_name,
@@ -25,6 +30,9 @@ app = FastAPI(
     openapi_url="/openapi.json",
 )
 
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.cors_origins,
@@ -32,6 +40,8 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+app.add_middleware(SlowAPIMiddleware)
+app.add_middleware(SecurityHeadersMiddleware)
 
 
 @app.exception_handler(AppException)
@@ -65,7 +75,6 @@ async def unhandled_exception_handler(request: Request, exc: Exception):
             status_code=exc.status_code,
             content={"success": False, "message": exc.message, "errors": []},
         )
-    # Nunca exponer excepciones internas al usuario (Documento 06/09).
     return JSONResponse(
         status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
         content={

@@ -1,14 +1,8 @@
-"""
-Use Case: GoogleLogin.
-
-Verifica un ID token de Google, crea o encuentra el usuario
-y emite tokens de acceso/refresh.
-"""
-
 from datetime import datetime, timedelta, timezone
 
-import httpx
 from fastapi import HTTPException, status
+from google.auth.transport import requests as google_requests
+from google.oauth2 import id_token
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import settings as app_settings
@@ -37,7 +31,11 @@ DEFAULT_CATEGORIES = [
     ("Regalos", "Gift", "#F97316", "income"),
 ]
 
-GOOGLE_TOKENINFO_URL = "https://oauth2.googleapis.com/tokeninfo"
+ALLOWED_AUDIENCES = {
+    app_settings.google_web_client_id,
+    app_settings.google_android_client_id,
+    app_settings.google_ios_client_id,
+}
 
 
 class GoogleLoginUseCase:
@@ -50,18 +48,28 @@ class GoogleLoginUseCase:
     async def execute(
         self, data: GoogleLoginRequest, ip: str | None = None, device: str | None = None
     ) -> TokenResponse:
-        async with httpx.AsyncClient(timeout=10.0) as client:
-            resp = await client.get(
-                GOOGLE_TOKENINFO_URL, params={"id_token": data.id_token}
+        try:
+            request = google_requests.Request()
+            info = id_token.verify_oauth2_token(
+                data.id_token, request, audience=list(ALLOWED_AUDIENCES)
             )
-
-        if resp.status_code != 200:
+        except ValueError as e:
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Token de Google inválido o expirado.",
+                detail=f"Token de Google inválido o expirado: {e}",
             )
 
-        info = resp.json()
+        if info.get("aud") not in {a for a in ALLOWED_AUDIENCES if a}:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Token de Google no emitido para esta aplicación.",
+            )
+
+        if info.get("email_verified") not in ("true", True):
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Correo de Google no verificado.",
+            )
 
         email = info.get("email")
         google_id = info.get("sub")

@@ -37,20 +37,16 @@ class RefreshTokenUseCase:
         self.session_repository = SessionRepository(session)
         self.user_repository = UserRepository(session)
 
-    async def execute(self, data: RefreshRequest) -> TokenResponse:
-        """Rota el refresh token: invalida el actual y genera uno nuevo.
+    async def execute_str(self, refresh_token_str: str) -> TokenResponse:
+        """Rota el refresh token a partir de un string.
 
         Args:
-            data: Datos con el refresh token a rotar.
+            refresh_token_str: El refresh token JWT como string.
 
         Returns:
             TokenResponse con los nuevos tokens de acceso y refresh.
-
-        Raises:
-            InvalidTokenException: Si el token es inválido, la sesión ya no es válida
-                o el usuario no existe/está inactivo.
         """
-        payload = decode_token(data.refresh_token, expected_type=TokenType.REFRESH)
+        payload = decode_token(refresh_token_str, expected_type=TokenType.REFRESH)
         jti = payload.get("jti")
         user_id = payload.get("sub")
 
@@ -82,3 +78,6 @@ class RefreshTokenUseCase:
         return TokenResponse(
             access_token=new_access_token, refresh_token=new_refresh_token
         )
+
+    async def execute(self, data: RefreshRequest) -> TokenResponse:
+        return await self.execute_str(data.refresh_token)

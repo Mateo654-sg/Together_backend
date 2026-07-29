@@ -146,7 +146,7 @@ class TestCreateExpense:
                 "expense_date": "2026-07-20",
             },
         )
-        assert response.status_code == 222
+        assert response.status_code == 422
 
     async def test_requires_authentication(self, client):
         response = await client.post(

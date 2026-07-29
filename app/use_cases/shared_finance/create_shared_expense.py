@@ -112,11 +112,21 @@ class CreateSharedExpenseUseCase:
     ) -> Decimal:
         if split_type == SplitType.EQUAL:
             return total / 2
-        elif split_type == SplitType.PERCENTAGE and split_details:
-            details = json.loads(split_details)
-            partner_percentage = details.get("partner_percentage", 50)
-            return total * Decimal(str(partner_percentage)) / 100
-        elif split_type == SplitType.CUSTOM and split_details:
-            details = json.loads(split_details)
-            return Decimal(str(details.get("partner_amount", 0)))
+        if split_details:
+            try:
+                details = json.loads(split_details)
+            except (json.JSONDecodeError, TypeError):
+                raise ValidationException("split_details tiene un formato JSON inválido.")
+            if split_type == SplitType.PERCENTAGE:
+                pct = details.get("partner_percentage", 50)
+                if not isinstance(pct, (int, float)) or not (0 <= pct <= 100):
+                    raise ValidationException("partner_percentage debe estar entre 0 y 100.")
+                return total * Decimal(str(pct)) / 100
+            if split_type == SplitType.CUSTOM:
+                amount = details.get("partner_amount", 0)
+                if not isinstance(amount, (int, float)) or Decimal(str(amount)) < 0:
+                    raise ValidationException("partner_amount debe ser un monto válido.")
+                if Decimal(str(amount)) > total:
+                    raise ValidationException("partner_amount no puede exceder el total.")
+                return Decimal(str(amount))
         return total / 2

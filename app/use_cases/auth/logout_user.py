@@ -22,16 +22,15 @@ class LogoutUserUseCase:
         self.session = session
         self.session_repository = SessionRepository(session)
 
-    async def execute(self, data: RefreshRequest) -> None:
+    async def execute_str(self, refresh_token_str: str) -> None:
         """Ejecuta el logout invalidando el refresh token.
 
         Args:
-            data: Datos con el refresh token a invalidar.
+            refresh_token_str: El refresh token JWT como string.
         """
         try:
-            payload = decode_token(data.refresh_token, expected_type=TokenType.REFRESH)
+            payload = decode_token(refresh_token_str, expected_type=TokenType.REFRESH)
         except Exception:
-            # Logout es idempotente: si el token ya es inválido, no es un error.
             return
 
         jti = payload.get("jti")
@@ -39,3 +38,6 @@ class LogoutUserUseCase:
         if session_obj is not None:
             await self.session_repository.revoke(session_obj)
             await self.session.commit()
+
+    async def execute(self, data: RefreshRequest) -> None:
+        return await self.execute_str(data.refresh_token)

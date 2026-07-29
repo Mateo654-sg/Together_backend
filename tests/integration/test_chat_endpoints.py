@@ -41,9 +41,9 @@ class TestChat:
         token_sender = await register_and_login(client, "sender@test.com")
         token_receiver = await register_and_login(client, "receiver@test.com")
 
-        # Get receiver_id from profile
+        # Get receiver_id from /users/me
         profile_resp = await client.get(
-            "/api/v1/users/profile", headers=auth_headers(token_receiver)
+            "/api/v1/users/me", headers=auth_headers(token_receiver)
         )
         receiver_id = profile_resp.json()["id"]
 

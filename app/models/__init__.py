@@ -5,6 +5,7 @@ Necesario para que Alembic detecte automáticamente los modelos
 al generar migraciones (autogenerate).
 """
 from app.db.base import Base  # noqa: F401
+from app.models.password_reset_token import PasswordResetToken  # noqa: F401
 from app.models.ai_history import AIHistory  # noqa: F401
 from app.models.budget import Budget  # noqa: F401
 from app.models.couple import Couple  # noqa: F401

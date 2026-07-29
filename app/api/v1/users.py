@@ -8,6 +8,7 @@ from app.db.session import get_db
 from app.models.user import User
 from app.schemas.user import (
     ChangePasswordRequest,
+    DeleteAccountRequest,
     SessionHistoryResponse,
     UpdateAvatarRequest,
     UpdateUserRequest,
@@ -50,13 +51,13 @@ async def update_me(
 
 @router.delete("/me", status_code=204)
 async def delete_me(
-    password: str,
+    data: DeleteAccountRequest,
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
     """FR-010: Eliminar cuenta (requiere confirmar contraseña)."""
     use_case = DeleteUserUseCase(db)
-    await use_case.execute(current_user.id, password)
+    await use_case.execute(current_user.id, data.password)
 
 
 @router.get("/settings", response_model=UserSettingsResponse)
