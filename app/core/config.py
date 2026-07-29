@@ -7,6 +7,9 @@ datos sensibles (Documento 12 — Seguridad, Documento 16 — Playbook).
 """
 from functools import lru_cache
 
+import json
+
+from pydantic import field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -57,6 +60,16 @@ class Settings(BaseSettings):
         "http://localhost:8000",
         "http://localhost:8081",
     ]
+
+    @field_validator("cors_origins", mode="before")
+    @classmethod
+    def parse_cors_origins(cls, v):
+        if isinstance(v, str):
+            try:
+                return json.loads(v)
+            except json.JSONDecodeError:
+                return [o.strip() for o in v.split(",") if o.strip()]
+        return v
 
     # Google OAuth
     google_web_client_id: str | None = None

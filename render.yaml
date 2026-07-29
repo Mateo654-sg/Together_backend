@@ -22,7 +22,7 @@ services:
       - key: REFRESH_TOKEN_EXPIRE_DAYS
         value: "30"
       - key: CORS_ORIGINS
-        value: '["https://together-frontend-jgo1-eta.vercel.app","http://localhost:3000","http://localhost:8081"]'
+        value: '["https://together-finance-delta.vercel.app","https://together-frontend-jgo1-eta.vercel.app","http://localhost:3000","http://localhost:8081"]'
       - key: APP_ENV
         value: production
       - key: APP_NAME
