@@ -7,7 +7,37 @@ import uuid
 from datetime import date, datetime
 from decimal import Decimal
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, field_validator
+
+
+PAYMENT_METHOD_OPTIONS = {
+    "Efectivo",
+    "Nequi",
+    "Nu",
+    "Bancolombia",
+    "Davivienda",
+    "BBVA",
+    "Banco de Bogotá",
+    "Caja Social",
+    "Banco AV Villas",
+    "Banco Popular",
+    "Colpatria",
+    "PSE",
+    "Tarjeta Débito",
+    "Tarjeta Crédito",
+    "Otro",
+}
+
+
+class PaymentMethodValidator(BaseModel):
+    @field_validator("payment_method", check_fields=False)
+    @classmethod
+    def validate_payment_method(cls, value: str | None) -> str | None:
+        if value is None:
+            return value
+        if value not in PAYMENT_METHOD_OPTIONS:
+            raise ValueError("Selecciona un método de pago válido.")
+        return value
 
 
 # ─── Categories ────────────────────────────────────────────────────────────────
@@ -39,7 +69,7 @@ class CategoryResponse(BaseModel):
 
 # ─── Personal Expenses ─────────────────────────────────────────────────────────
 
-class CreateExpenseRequest(BaseModel):
+class CreateExpenseRequest(PaymentMethodValidator):
     category_id: uuid.UUID | None = None
     amount: Decimal = Field(..., gt=0, decimal_places=2)
     description: str = Field(..., min_length=1, max_length=255)
@@ -49,7 +79,7 @@ class CreateExpenseRequest(BaseModel):
     expense_date: date
 
 
-class UpdateExpenseRequest(BaseModel):
+class UpdateExpenseRequest(PaymentMethodValidator):
     category_id: uuid.UUID | None = None
     amount: Decimal | None = Field(None, gt=0, decimal_places=2)
     description: str | None = Field(None, min_length=1, max_length=255)

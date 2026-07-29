@@ -4,7 +4,7 @@ Schemas Pydantic del módulo de Dashboard (FR-079 a FR-088).
 Incluye schemas para el resumen principal y datos agregados.
 """
 import uuid
-from datetime import datetime
+from datetime import date, datetime
 from decimal import Decimal
 
 from pydantic import BaseModel, ConfigDict
@@ -20,7 +20,7 @@ class DashboardGoalSummary(BaseModel):
     target_amount: Decimal
     current_amount: Decimal
     progress_percentage: float
-    target_date: datetime | None = None
+    target_date: date | None = None
     status: str
 
 
@@ -29,7 +29,7 @@ class DashboardRecentActivity(BaseModel):
     type: str  # "expense", "income", "contribution"
     description: str
     amount: Decimal
-    date: datetime
+    date: date | datetime
     category: str | None = None
 
 
@@ -38,7 +38,7 @@ class DashboardUpcomingPayment(BaseModel):
     type: str  # "expense", "debt", "budget"
     description: str
     amount: Decimal
-    due_date: datetime
+    due_date: date | datetime
     status: str
 
 
