@@ -35,7 +35,7 @@ def _set_refresh_cookie(response: Response, token: str) -> None:
         value=token,
         httponly=True,
         secure=settings.is_production,
-        samesite="none",
+        samesite="lax",
         max_age=settings.refresh_token_expire_days * 86400,
         path="/api/v1",
     )
@@ -46,7 +46,7 @@ def _clear_refresh_cookie(response: Response) -> None:
         key=REFRESH_COOKIE_KEY,
         path="/api/v1",
         secure=settings.is_production,
-        samesite="none",
+        samesite="lax",
     )
 
 
@@ -69,7 +69,7 @@ async def register(
         value=result.refresh_token,
         httponly=True,
         secure=settings.is_production,
-        samesite="none",
+        samesite="lax",
         max_age=settings.refresh_token_expire_days * 86400,
         path="/api/v1",
     )
@@ -98,7 +98,7 @@ async def login(
         value=result.refresh_token,
         httponly=True,
         secure=settings.is_production,
-        samesite="none",
+        samesite="lax",
         max_age=settings.refresh_token_expire_days * 86400,
         path="/api/v1",
     )
@@ -125,7 +125,7 @@ async def google_login(
         value=result.refresh_token,
         httponly=True,
         secure=settings.is_production,
-        samesite="none",
+        samesite="lax",
         max_age=settings.refresh_token_expire_days * 86400,
         path="/api/v1",
     )
@@ -174,7 +174,7 @@ async def refresh(
         value=result.refresh_token,
         httponly=True,
         secure=settings.is_production,
-        samesite="none",
+        samesite="lax",
         max_age=settings.refresh_token_expire_days * 86400,
         path="/api/v1",
     )
@@ -203,7 +203,7 @@ async def logout(
         key=REFRESH_COOKIE_KEY,
         path="/api/v1",
         secure=settings.is_production,
-        samesite="none",
+        samesite="lax",
     )
     return response
 
