@@ -8,7 +8,6 @@ import uuid
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.exceptions import ConflictException
 from app.financial_engine.goals import (
     goal_days_remaining,
     goal_predicted_completion,
@@ -50,19 +49,18 @@ class ListGoalsUseCase:
 
         Returns:
             GoalListResponse con metas enriquecidas (progreso, días restantes, predicción).
-
-        Raises:
-            ConflictException: Si el usuario no tiene una pareja activa.
         """
         couple = await self.couple_repository.get_active_for_user(user_id)
-        if couple is None or couple.status != CoupleStatus.ACCEPTED:
-            raise ConflictException(
-                "Necesitas una pareja activa para consultar metas compartidas."
-            )
+        is_personal = couple is None or couple.status != CoupleStatus.ACCEPTED
 
-        goals, total = await self.goal_repository.list_by_couple(
-            couple.id, page=page, limit=limit, status=status
-        )
+        if is_personal:
+            goals, total = await self.goal_repository.list_by_user(
+                user_id, page=page, limit=limit, status=status
+            )
+        else:
+            goals, total = await self.goal_repository.list_by_couple(
+                couple.id, page=page, limit=limit, status=status
+            )
 
         data = []
         for goal in goals:

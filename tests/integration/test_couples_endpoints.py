@@ -208,6 +208,55 @@ class TestReject:
         assert new_invite.status_code == 201
 
 
+class TestCancel:
+    async def test_cancel_success_returns_rejected_and_status_none(self, client):
+        token = await register_and_login(client, "mateo@test.com")
+        invite_response = await client.post(
+            "/api/v1/couples/invite", headers=auth_headers(token)
+        )
+        assert invite_response.status_code == 201
+
+        cancel_response = await client.post(
+            "/api/v1/couples/cancel", headers=auth_headers(token)
+        )
+        assert cancel_response.status_code == 200
+        assert cancel_response.json()["status"] == "rejected"
+
+        status_response = await client.get("/api/v1/couples", headers=auth_headers(token))
+        assert status_response.json()["status"] == "none"
+
+    async def test_cancel_makes_code_invalid_for_accept(self, client):
+        mateo_token = await register_and_login(client, "mateo@test.com")
+        salome_token = await register_and_login(client, "salome@test.com")
+
+        invite_response = await client.post(
+            "/api/v1/couples/invite", headers=auth_headers(mateo_token)
+        )
+        code = invite_response.json()["invitation_code"]
+
+        await client.post("/api/v1/couples/cancel", headers=auth_headers(mateo_token))
+
+        accept_response = await client.post(
+            "/api/v1/couples/accept",
+            headers=auth_headers(salome_token),
+            json={"invitation_code": code},
+        )
+        assert accept_response.status_code == 409
+
+    async def test_after_cancel_inviter_can_invite_again(self, client):
+        token = await register_and_login(client, "mateo@test.com")
+        await client.post("/api/v1/couples/invite", headers=auth_headers(token))
+        await client.post("/api/v1/couples/cancel", headers=auth_headers(token))
+
+        new_invite = await client.post("/api/v1/couples/invite", headers=auth_headers(token))
+        assert new_invite.status_code == 201
+
+    async def test_cancel_without_pending_invitation_returns_404(self, client):
+        token = await register_and_login(client, "mateo@test.com")
+        response = await client.post("/api/v1/couples/cancel", headers=auth_headers(token))
+        assert response.status_code == 404
+
+
 class TestUnlink:
     async def test_unlink_success_and_status_returns_none(self, client):
         mateo_token = await register_and_login(client, "mateo@test.com")

@@ -14,6 +14,7 @@ from app.schemas.couple import (
     RejectInvitationRequest,
 )
 from app.use_cases.couples.accept_invitation import AcceptInvitationUseCase
+from app.use_cases.couples.cancel_invitation import CancelInvitationUseCase
 from app.use_cases.couples.create_invitation import CreateInvitationUseCase
 from app.use_cases.couples.get_couple_status import GetCoupleStatusUseCase
 from app.use_cases.couples.reject_invitation import RejectInvitationUseCase
@@ -62,6 +63,19 @@ async def reject_invitation(
     """FR-014: Rechazar una invitación mediante código."""
     use_case = RejectInvitationUseCase(db)
     return await use_case.execute(current_user.id, data.invitation_code)
+
+
+@router.post("/cancel", response_model=CoupleResponse)
+async def cancel_invitation(
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """FR-011/FR-012: Cancelar la invitación pendiente del emisor.
+
+    El código deja de ser válido y el usuario vuelve al estado sin pareja.
+    """
+    use_case = CancelInvitationUseCase(db)
+    return await use_case.execute(current_user.id)
 
 
 @router.delete("/unlink", status_code=status.HTTP_204_NO_CONTENT)

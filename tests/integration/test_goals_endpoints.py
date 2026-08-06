@@ -59,8 +59,8 @@ async def create_income(client, token, amount=5000000):
     )
 
 
-class TestGoalRequiresCouple:
-    async def test_create_goal_without_couple_returns_409(self, client):
+class TestGoalPersonal:
+    async def test_create_goal_without_couple_is_personal(self, client):
         token = await register_and_login(client, "mateo@test.com")
         response = await client.post(
             "/api/v1/goals",
@@ -70,14 +70,27 @@ class TestGoalRequiresCouple:
                 "target_amount": 5000000,
             },
         )
-        assert response.status_code == 409
+        assert response.status_code == 201
+        data = response.json()
+        assert data["title"] == "Viaje a Europa"
+        assert data["couple_id"] is None
+        assert float(data["target_amount"]) == 5000000
 
-    async def test_list_goals_without_couple_returns_409(self, client):
+    async def test_list_goals_without_couple_returns_personal(self, client):
         token = await register_and_login(client, "mateo@test.com")
+        await client.post(
+            "/api/v1/goals",
+            headers=auth_headers(token),
+            json={"title": "Viaje a Europa", "target_amount": 5000000},
+        )
         response = await client.get(
             "/api/v1/goals", headers=auth_headers(token)
         )
-        assert response.status_code == 409
+        assert response.status_code == 200
+        data = response.json()
+        assert data["pagination"]["total"] == 1
+        assert data["data"][0]["title"] == "Viaje a Europa"
+        assert data["data"][0]["couple_id"] is None
 
 
 class TestCreateGoal:

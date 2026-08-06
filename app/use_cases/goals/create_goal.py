@@ -8,7 +8,7 @@ import uuid
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.exceptions import ConflictException, ValidationException
+from app.core.exceptions import ValidationException
 from app.models.couple import CoupleStatus
 from app.models.goal import Goal
 from app.repositories.couple_repository import CoupleRepository
@@ -38,14 +38,10 @@ class CreateGoalUseCase:
             La meta creada.
 
         Raises:
-            ConflictException: Si el usuario no tiene una pareja activa.
             ValidationException: Si la fecha objetivo es en el pasado.
         """
         couple = await self.couple_repository.get_active_for_user(user_id)
-        if couple is None or couple.status != CoupleStatus.ACCEPTED:
-            raise ConflictException(
-                "Necesitas una pareja activa para crear metas compartidas."
-            )
+        is_personal = couple is None or couple.status != CoupleStatus.ACCEPTED
 
         if data.target_date is not None:
             from datetime import date
@@ -55,15 +51,26 @@ class CreateGoalUseCase:
                     "La fecha objetivo no puede ser en el pasado."
                 )
 
-        goal = Goal(
-            couple_id=couple.id,
-            user_id=None,
-            title=data.title.strip(),
-            description=data.description,
-            image=data.image,
-            target_amount=data.target_amount,
-            target_date=data.target_date,
-        )
+        if is_personal:
+            goal = Goal(
+                couple_id=None,
+                user_id=user_id,
+                title=data.title.strip(),
+                description=data.description,
+                image=data.image,
+                target_amount=data.target_amount,
+                target_date=data.target_date,
+            )
+        else:
+            goal = Goal(
+                couple_id=couple.id,
+                user_id=None,
+                title=data.title.strip(),
+                description=data.description,
+                image=data.image,
+                target_amount=data.target_amount,
+                target_date=data.target_date,
+            )
         await self.goal_repository.create(goal)
         await self.session.commit()
         return goal

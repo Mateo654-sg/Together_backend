@@ -32,6 +32,7 @@ class BudgetResponse(BaseModel):
     id: uuid.UUID
     user_id: uuid.UUID
     category_id: uuid.UUID | None
+    category_name: str | None = None
     amount: Decimal
     month: int
     year: int
@@ -51,6 +52,7 @@ class BudgetListResponse(BaseModel):
 class BudgetAlertResponse(BaseModel):
     budget_id: uuid.UUID
     category_id: uuid.UUID | None
+    category_name: str | None = None
     amount: Decimal
     spent: Decimal
     percentage: float

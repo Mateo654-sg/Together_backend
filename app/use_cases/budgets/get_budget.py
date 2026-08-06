@@ -42,6 +42,7 @@ class GetBudgetUseCase:
             raise NotFoundException("Presupuesto no encontrado.")
 
         resp = BudgetResponse.model_validate(budget)
+        resp.category_name = budget.category.name if budget.category else None
         spent = await self.budget_repository._get_spent_amount(user_id, budget)
         resp.spent = spent
         resp.percentage_consumed = (

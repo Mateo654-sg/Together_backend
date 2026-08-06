@@ -9,6 +9,7 @@ from decimal import Decimal
 
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import selectinload
 
 from app.models.budget import Budget
 from app.repositories.base_repository import BaseRepository
@@ -65,6 +66,7 @@ class BudgetRepository(BaseRepository[Budget]):
 
         stmt = (
             select(Budget)
+            .options(selectinload(Budget.category))
             .where(*base_filter)
             .order_by(Budget.year.desc(), Budget.month.desc())
             .offset((page - 1) * limit)
@@ -87,7 +89,7 @@ class BudgetRepository(BaseRepository[Budget]):
         Returns:
             El presupuesto encontrado o None si no existe o no pertenece al usuario.
         """
-        stmt = select(Budget).where(
+        stmt = select(Budget).options(selectinload(Budget.category)).where(
             Budget.id == budget_id,
             Budget.user_id == user_id,
             Budget.deleted_at.is_(None),
@@ -218,6 +220,7 @@ class BudgetRepository(BaseRepository[Budget]):
                 {
                     "budget_id": budget.id,
                     "category_id": budget.category_id,
+                    "category_name": budget.category.name if budget.category else None,
                     "amount": budget.amount,
                     "spent": spent,
                     "percentage": min(percentage, 100.0),
