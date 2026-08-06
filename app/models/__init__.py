@@ -6,10 +6,14 @@ al generar migraciones (autogenerate).
 """
 from app.db.base import Base  # noqa: F401
 from app.models.password_reset_token import PasswordResetToken  # noqa: F401
+from app.models.recurring_transaction import RecurringTransaction  # noqa: F401
+from app.models.email_verification_token import EmailVerificationToken  # noqa: F401
+from app.models.export_record import Export  # noqa: F401
 from app.models.ai_history import AIHistory  # noqa: F401
 from app.models.budget import Budget  # noqa: F401
 from app.models.couple import Couple  # noqa: F401
 from app.models.debt import Debt  # noqa: F401
+from app.models.expense_tag import ExpenseTag  # noqa: F401
 from app.models.goal import Goal  # noqa: F401
 from app.models.goal_contribution import GoalContribution  # noqa: F401
 from app.models.login_history import LoginHistory  # noqa: F401
@@ -23,6 +27,7 @@ from app.models.session import Session  # noqa: F401
 from app.models.shared_category import SharedCategory  # noqa: F401
 from app.models.shared_expense import SharedExpense  # noqa: F401
 from app.models.shared_income import SharedIncome  # noqa: F401
+from app.models.transfer import Transfer  # noqa: F401
 from app.models.user import User  # noqa: F401
 from app.models.user_settings import UserSettings  # noqa: F401
 from app.models.chat_message import ChatMessage  # noqa: F401
@@ -49,4 +54,10 @@ __all__ = [
     "Goal",
     "GoalContribution",
     "ChatMessage",
+    "EmailVerificationToken",
+    "PasswordResetToken",
+    "RecurringTransaction",
+    "ExpenseTag",
+    "Transfer",
+    "Export",
 ]

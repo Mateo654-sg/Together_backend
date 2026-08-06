@@ -4,7 +4,6 @@ Integration tests: /api/v1/auth/*
 Flujo completo Flutter -> FastAPI -> PostgreSQL, sin mocks
 (Documento 13 — Testing Strategy).
 """
-import pytest
 
 VALID_PASSWORD = "SuperSegura123!"
 
@@ -26,8 +25,10 @@ class TestRegister:
         response = await register_user(client)
         assert response.status_code == 201
         data = response.json()
-        assert data["email"] == "mateo@test.com"
-        assert data["is_verified"] is False
+        assert "access_token" in data
+        assert "refresh_token" in data
+        assert data["token_type"] == "bearer"
+        assert "verification_token" in data
         assert "password" not in data
         assert "password_hash" not in data
 
@@ -44,7 +45,63 @@ class TestRegister:
     async def test_register_email_is_normalized_to_lowercase(self, client):
         response = await register_user(client, email="Mateo@TEST.com")
         assert response.status_code == 201
-        assert response.json()["email"] == "mateo@test.com"
+        verification_token = response.json()["verification_token"]
+        await client.post(
+            "/api/v1/auth/verify-email", json={"token": verification_token}
+        )
+        login_response = await client.post(
+            "/api/v1/auth/login",
+            json={"email": "mateo@test.com", "password": VALID_PASSWORD},
+        )
+        assert login_response.status_code == 200
+
+
+class TestVerifyEmail:
+    async def test_verify_email_marks_user_verified(self, client):
+        await register_user(client)
+        login = await client.post(
+            "/api/v1/auth/login",
+            json={"email": "mateo@test.com", "password": VALID_PASSWORD},
+        )
+        me = await client.get(
+            "/api/v1/users/me",
+            headers={"Authorization": f"Bearer {login.json()['access_token']}"},
+        )
+        assert me.status_code == 401
+
+        response = await register_user(client, email="otro@test.com")
+        verification_token = response.json()["verification_token"]
+        verify = await client.post(
+            "/api/v1/auth/verify-email", json={"token": verification_token}
+        )
+        assert verify.status_code == 204
+
+        login = await client.post(
+            "/api/v1/auth/login",
+            json={"email": "otro@test.com", "password": VALID_PASSWORD},
+        )
+        me = await client.get(
+            "/api/v1/users/me",
+            headers={"Authorization": f"Bearer {login.json()['access_token']}"},
+        )
+        assert me.status_code == 200
+
+    async def test_verify_email_with_invalid_token_returns_401(self, client):
+        response = await client.post(
+            "/api/v1/auth/verify-email", json={"token": "token.invalido"}
+        )
+        assert response.status_code == 401
+
+    async def test_verify_email_token_used_twice_fails(self, client):
+        response = await register_user(client)
+        verification_token = response.json()["verification_token"]
+        await client.post(
+            "/api/v1/auth/verify-email", json={"token": verification_token}
+        )
+        second = await client.post(
+            "/api/v1/auth/verify-email", json={"token": verification_token}
+        )
+        assert second.status_code == 401
 
 
 class TestLogin:

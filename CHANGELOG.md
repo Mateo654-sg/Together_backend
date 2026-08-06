@@ -7,6 +7,16 @@ y el proyecto adherce a [Semantic Versioning](https://semver.org/lang/es/).
 
 ---
 
+## [Unreleased]
+
+### Added
+- `GET /users/export` (FR-130): exportación de datos personales en ZIP con
+  `together_export.json` (`app/use_cases/users/export_data.py`).
+
+### Changed
+- `DebtResponse` ahora incluye `description` (descripción del gasto compartido
+  asociado, eager-loaded en `debt_repository.py`).
+
 ## [1.0.0] - 2026-07-22
 
 ### Added

@@ -1,9 +1,13 @@
 import uuid
-from datetime import date, timedelta
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.exceptions import NotFoundException
+from app.financial_engine.goals import (
+    goal_days_remaining,
+    goal_predicted_completion,
+    goal_progress,
+)
 from app.models.couple import CoupleStatus
 from app.models.goal import Goal
 from app.repositories.couple_repository import CoupleRepository
@@ -35,31 +39,27 @@ class GetGoalUseCase:
         goal_data.predicted_completion_date = self._predict_completion(goal)
         return goal_data
 
-    def _calculate_progress(self, goal: Goal) -> float | None:
+    @staticmethod
+    def _calculate_progress(goal: Goal) -> float | None:
         if goal.target_amount <= 0:
             return None
-        return min(float(goal.current_amount / goal.target_amount * 100), 100.0)
+        return float(goal_progress(goal.current_amount, goal.target_amount))
 
-    def _calculate_days_remaining(self, goal: Goal) -> int | None:
+    @staticmethod
+    def _calculate_days_remaining(goal: Goal) -> int | None:
         if goal.target_date is None:
             return None
-        delta = goal.target_date - date.today()
-        return max(delta.days, 0)
+        return goal_days_remaining(goal.target_date)
 
-    def _predict_completion(self, goal: Goal):
+    @staticmethod
+    def _predict_completion(goal: Goal):
         if goal.target_amount <= 0 or goal.current_amount <= 0:
             return None
         if goal.target_date is None:
             return None
-        progress_ratio = float(goal.current_amount / goal.target_amount)
-        if progress_ratio >= 1.0:
-            return date.today()
-        days_elapsed = (date.today() - goal.created_at.date()).days
-        if days_elapsed <= 0:
-            return goal.target_date
-        daily_rate = float(goal.current_amount) / days_elapsed
-        remaining_amount = float(goal.target_amount - goal.current_amount)
-        if daily_rate <= 0:
-            return goal.target_date
-        days_needed = int(remaining_amount / daily_rate)
-        return date.today() + timedelta(days=days_needed)
+        return goal_predicted_completion(
+            goal.current_amount,
+            goal.target_amount,
+            goal.created_at.date(),
+            goal.target_date,
+        )

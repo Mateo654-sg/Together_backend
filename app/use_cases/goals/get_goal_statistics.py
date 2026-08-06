@@ -5,10 +5,10 @@ Obtiene estadísticas generales de las metas de la pareja o personales.
 """
 
 import uuid
-from datetime import date
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.financial_engine import goal_on_track, goal_progress
 from app.models.couple import CoupleStatus
 from app.models.goal import GoalStatus
 from app.repositories.couple_repository import CoupleRepository
@@ -58,33 +58,19 @@ class GetGoalStatisticsUseCase:
                 goals_on_track += 1
                 continue
 
-            days_remaining = (goal.target_date - date.today()).days
-            if days_remaining <= 0:
-                goals_behind += 1
-                continue
-
-            progress = (
-                float(goal.current_amount / goal.target_amount)
-                if goal.target_amount > 0
-                else 0
+            on_track = goal_on_track(
+                goal.current_amount,
+                goal.target_amount,
+                goal.target_date,
+                goal.created_at.date(),
             )
-            days_elapsed = (date.today() - goal.created_at.date()).days
-            if days_elapsed <= 0:
-                goals_on_track += 1
-                continue
-
-            expected_progress = days_elapsed / (
-                (goal.target_date - goal.created_at.date()).days or 1
-            )
-            if progress >= expected_progress:
+            if on_track:
                 goals_on_track += 1
             else:
                 goals_behind += 1
 
-        overall_progress = (
-            float(stats["total_saved"] / stats["total_target"] * 100)
-            if stats["total_target"] > 0
-            else 0.0
+        overall_progress = float(
+            goal_progress(stats["total_saved"], stats["total_target"])
         )
 
         return GoalStatisticsResponse(

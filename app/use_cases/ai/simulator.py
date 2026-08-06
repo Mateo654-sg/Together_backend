@@ -2,6 +2,8 @@
 Use Case: AISimulator.
 
 Simula escenarios financieros "¿Qué pasaría si...?"
+
+Las proyecciones las calcula el Financial Rules Engine (Motor 20).
 """
 
 import uuid
@@ -9,6 +11,8 @@ from decimal import Decimal
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.financial_engine import net_cash_flow
+from app.financial_engine.forecasts import forecast_balance
 from app.repositories.personal_expense_repository import PersonalExpenseRepository
 from app.repositories.personal_income_repository import PersonalIncomeRepository
 from app.schemas.ai import AISimulatorRequest, AISimulatorResponse
@@ -44,11 +48,11 @@ class AISimulatorUseCase:
         expenses, _ = await self.expense_repo.list_by_user(user_id, page=1, limit=1000)
         total_expense = sum(e.amount for e in expenses)
 
-        monthly_savings = total_income - total_expense
+        monthly_savings = net_cash_flow(total_income, total_expense)
 
         current_projection = {
             "monthly_savings": float(monthly_savings),
-            "total_savings": float(monthly_savings * data.months),
+            "total_savings": float(forecast_balance(Decimal("0"), monthly_savings, data.months)),
         }
 
         extra = data.monthly_amount or Decimal("0")
@@ -56,12 +60,12 @@ class AISimulatorUseCase:
 
         simulated_projection = {
             "monthly_savings": float(simulated_monthly),
-            "total_savings": float(simulated_monthly * data.months),
+            "total_savings": float(forecast_balance(Decimal("0"), simulated_monthly, data.months)),
         }
 
         difference = {
             "monthly_difference": float(extra),
-            "total_difference": float(extra * data.months),
+            "total_difference": float(forecast_balance(Decimal("0"), extra, data.months)),
         }
 
         recommendation = f"Si ahorraras ${extra:,.0f} adicionales mensuales, en {data.months} meses tendrías ${simulated_projection['total_savings']:,.0f} COP."

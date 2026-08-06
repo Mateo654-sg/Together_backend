@@ -3,7 +3,6 @@ Unit tests: app.core.security
 
 Nunca acceden a la base de datos (Documento 13 — Testing Strategy).
 """
-import time
 
 import pytest
 

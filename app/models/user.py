@@ -14,9 +14,11 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 from app.db.base import Base, TimestampMixin, UUIDMixin
 
 if TYPE_CHECKING:
+    from app.models.export_record import Export
     from app.models.personal_category import PersonalCategory
     from app.models.personal_expense import PersonalExpense
     from app.models.personal_income import PersonalIncome
+    from app.models.recurring_transaction import RecurringTransaction
     from app.models.session import Session
     from app.models.user_settings import UserSettings
 
@@ -68,6 +70,12 @@ class User(Base, UUIDMixin, TimestampMixin):
         back_populates="user", cascade="all, delete-orphan"
     )
     personal_incomes: Mapped[list["PersonalIncome"]] = relationship(
+        back_populates="user", cascade="all, delete-orphan"
+    )
+    recurring_transactions: Mapped[list["RecurringTransaction"]] = relationship(
+        back_populates="user", cascade="all, delete-orphan"
+    )
+    exports: Mapped[list["Export"]] = relationship(
         back_populates="user", cascade="all, delete-orphan"
     )
 

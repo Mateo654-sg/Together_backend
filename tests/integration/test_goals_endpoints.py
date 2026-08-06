@@ -7,7 +7,7 @@ VALID_PASSWORD = "SuperSegura123!"
 
 
 async def register_and_login(client, email):
-    await client.post(
+    response = await client.post(
         "/api/v1/auth/register",
         json={
             "first_name": "Usuario",
@@ -16,6 +16,11 @@ async def register_and_login(client, email):
             "password": VALID_PASSWORD,
         },
     )
+    verification_token = response.json().get("verification_token")
+    if verification_token:
+        await client.post(
+            "/api/v1/auth/verify-email", json={"token": verification_token}
+        )
     login_response = await client.post(
         "/api/v1/auth/login", json={"email": email, "password": VALID_PASSWORD}
     )
@@ -43,6 +48,15 @@ async def create_couple(client, inviter_email, acceptor_email):
     )
 
     return inviter_token, acceptor_token
+
+
+async def create_income(client, token, amount=5000000):
+    """Helper: registra un ingreso personal para disponer de saldo."""
+    await client.post(
+        "/api/v1/incomes",
+        headers=auth_headers(token),
+        json={"amount": amount, "description": "Salario", "income_date": "2026-07-01"},
+    )
 
 
 class TestGoalRequiresCouple:
@@ -214,6 +228,7 @@ class TestContributeToGoal:
         mateo_token, salome_token = await create_couple(
             client, "mateo@test.com", "salome@test.com"
         )
+        await create_income(client, mateo_token)
 
         create_resp = await client.post(
             "/api/v1/goals",
@@ -242,6 +257,7 @@ class TestContributeToGoal:
         mateo_token, salome_token = await create_couple(
             client, "mateo@test.com", "salome@test.com"
         )
+        await create_income(client, mateo_token)
 
         create_resp = await client.post(
             "/api/v1/goals",
@@ -293,6 +309,8 @@ class TestGoalHistory:
         mateo_token, salome_token = await create_couple(
             client, "mateo@test.com", "salome@test.com"
         )
+        await create_income(client, mateo_token, 10000000)
+        await create_income(client, salome_token, 10000000)
 
         create_resp = await client.post(
             "/api/v1/goals",

@@ -504,8 +504,13 @@ El healthcheck verifica el endpoint `/health` cada 30 segundos.
 
 ## Testing
 
+Los tests de integración requieren un PostgreSQL dedicado. En este entorno el
+contenedor `together-pg-test` corre en el puerto **5433**:
+
 ```bash
-# Ejecutar todos los tests
+export TEST_DATABASE_URL="postgresql+asyncpg://together:together@localhost:5433/together_test_db"
+
+# Ejecutar todos los tests (unit + integración)
 pytest
 
 # Ejecutar con coverage
@@ -515,9 +520,13 @@ coverage report
 # Ejecutar solo tests unitarios
 pytest tests/unit/
 
-# Ejecutar tests de integracion
+# Ejecutar tests de integración
 pytest tests/integration/
 ```
+
+> ⚠️ El default del `tests/conftest.py` apunta a `5432`; en este entorno la BD
+> de test corre en **5433**, así que exporta `TEST_DATABASE_URL` antes de
+> ejecutar la suite. Estado actual: **349 tests pasando**.
 
 Los tests usan `pytest-asyncio` con modo `auto` para testing asincrono.
 

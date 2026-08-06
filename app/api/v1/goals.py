@@ -67,6 +67,28 @@ async def create_goal(
     return await use_case.execute(current_user.id, data)
 
 
+@router.get("/history", response_model=ContributionListResponse)
+async def list_goal_history(
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+    page: Annotated[int, Query(ge=1)] = 1,
+    limit: Annotated[int, Query(ge=1, le=100)] = 20,
+):
+    """FR-067-List: Historial de aportes a metas."""
+    use_case = ListGoalHistoryUseCase(db)
+    return await use_case.execute(current_user.id, page=page, limit=limit)
+
+
+@router.get("/statistics", response_model=GoalStatisticsResponse)
+async def get_goal_statistics(
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """FR-069 a FR-072: Estadísticas generales de metas."""
+    use_case = GetGoalStatisticsUseCase(db)
+    return await use_case.execute(current_user.id)
+
+
 @router.get("/{goal_id}", response_model=GoalResponse)
 async def get_goal(
     goal_id: uuid.UUID,
@@ -153,25 +175,3 @@ async def list_goal_contributions(
     """Lista los aportes de una meta específica."""
     use_case = ListGoalContributionsUseCase(db)
     return await use_case.execute(goal_id, page=page, limit=limit)
-
-
-@router.get("/history", response_model=ContributionListResponse)
-async def list_goal_history(
-    current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
-    page: Annotated[int, Query(ge=1)] = 1,
-    limit: Annotated[int, Query(ge=1, le=100)] = 20,
-):
-    """FR-067-List: Historial de aportes a metas."""
-    use_case = ListGoalHistoryUseCase(db)
-    return await use_case.execute(current_user.id, page=page, limit=limit)
-
-
-@router.get("/statistics", response_model=GoalStatisticsResponse)
-async def get_goal_statistics(
-    current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
-):
-    """FR-069 a FR-072: Estadísticas generales de metas."""
-    use_case = GetGoalStatisticsUseCase(db)
-    return await use_case.execute(current_user.id)

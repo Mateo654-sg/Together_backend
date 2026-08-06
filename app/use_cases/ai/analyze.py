@@ -38,8 +38,8 @@ class AIAnalyzeUseCase:
         )
         result = await self.ai_service.chat(user_id, question, endpoint="analyze")
 
-        lines = [l.strip("- ").strip() for l in result["answer"].split("\n") if l.strip()]
-        insights = [l for l in lines if len(l) > 10][:5]
+        lines = [line.strip("- ").strip() for line in result["answer"].split("\n") if line.strip()]
+        insights = [line for line in lines if len(line) > 10][:5]
         if not insights:
             insights = ["Análisis completado. Revisa los detalles en el reporte."]
 

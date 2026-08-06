@@ -15,8 +15,10 @@ from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.base import Base, TimestampMixin, UUIDMixin
+from app.models.expense_tag import expense_tag_relation
 
 if TYPE_CHECKING:
+    from app.models.expense_tag import ExpenseTag
     from app.models.personal_category import PersonalCategory
     from app.models.user import User
 
@@ -46,6 +48,9 @@ class PersonalExpense(Base, UUIDMixin, TimestampMixin):
     # Relationships
     user: Mapped["User"] = relationship(back_populates="personal_expenses")
     category: Mapped["PersonalCategory | None"] = relationship()
+    tags: Mapped[list["ExpenseTag"]] = relationship(
+        secondary=expense_tag_relation, back_populates="expenses"
+    )
 
     def __repr__(self) -> str:
         return f"<PersonalExpense id={self.id} amount={self.amount}>"

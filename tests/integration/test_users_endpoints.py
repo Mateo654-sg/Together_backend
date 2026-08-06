@@ -5,7 +5,7 @@ VALID_PASSWORD = "SuperSegura123!"
 
 
 async def register_and_login(client, email="mateo@test.com"):
-    await client.post(
+    response = await client.post(
         "/api/v1/auth/register",
         json={
             "first_name": "Mateo",
@@ -14,6 +14,11 @@ async def register_and_login(client, email="mateo@test.com"):
             "password": VALID_PASSWORD,
         },
     )
+    verification_token = response.json().get("verification_token")
+    if verification_token:
+        await client.post(
+            "/api/v1/auth/verify-email", json={"token": verification_token}
+        )
     login_response = await client.post(
         "/api/v1/auth/login", json={"email": email, "password": VALID_PASSWORD}
     )
@@ -259,4 +264,124 @@ class TestGetStatistics:
 
     async def test_statistics_requires_authentication(self, client):
         response = await client.get("/api/v1/users/statistics")
+        assert response.status_code == 401
+
+
+class TestExportUserData:
+    async def test_export_returns_zip(self, client):
+        token = await register_and_login(client)
+        headers = {"Authorization": f"Bearer {token}"}
+
+        await client.post(
+            "/api/v1/incomes",
+            headers=headers,
+            json={
+                "amount": 3000000,
+                "description": "Salario",
+                "income_date": "2026-07-01",
+            },
+        )
+        await client.post(
+            "/api/v1/expenses",
+            headers=headers,
+            json={
+                "amount": 500000,
+                "description": "Arriendo",
+                "expense_date": "2026-07-05",
+            },
+        )
+
+        response = await client.get("/api/v1/users/export", headers=headers)
+        assert response.status_code == 200
+        assert response.headers["content-type"].startswith("application/zip")
+        assert "attachment" in response.headers.get("content-disposition", "")
+
+        import io
+        import zipfile
+
+        with zipfile.ZipFile(io.BytesIO(response.content)) as archive:
+            assert "together_export.json" in archive.namelist()
+            payload = archive.read("together_export.json").decode("utf-8")
+        data = __import__("json").loads(payload)
+        assert data["profile"]["email"] == "mateo@test.com"
+        assert len(data["incomes"]) == 1
+        assert len(data["expenses"]) == 1
+
+    async def test_export_requires_authentication(self, client):
+        response = await client.get("/api/v1/users/export")
+        assert response.status_code == 401
+
+
+class TestSessions:
+    async def test_list_sessions_returns_created_sessions(self, client):
+        token = await register_and_login(client)
+        headers = {"Authorization": f"Bearer {token}"}
+        response = await client.get("/api/v1/users/sessions", headers=headers)
+        assert response.status_code == 200
+        data = response.json()["data"]
+        assert len(data) >= 1
+        assert "id" in data[0]
+        assert "is_revoked" in data[0]
+
+    async def test_list_sessions_requires_authentication(self, client):
+        response = await client.get("/api/v1/users/sessions")
+        assert response.status_code == 401
+
+    async def test_revoke_unknown_session_returns_404(self, client):
+        import uuid
+
+        token = await register_and_login(client)
+        headers = {"Authorization": f"Bearer {token}"}
+        response = await client.delete(
+            f"/api/v1/users/sessions/{uuid.uuid4()}", headers=headers
+        )
+        assert response.status_code == 404
+
+    async def test_revoke_session_then_refresh_fails(self, client):
+        token = await register_and_login(client)
+        headers = {"Authorization": f"Bearer {token}"}
+        sessions = (
+            await client.get("/api/v1/users/sessions", headers=headers)
+        ).json()["data"]
+        session_id = sessions[0]["id"]
+
+        response = await client.delete(
+            f"/api/v1/users/sessions/{session_id}", headers=headers
+        )
+        assert response.status_code == 204
+
+        # La cookie de refresh corresponde a la sesión revocada.
+        refresh_response = await client.post("/api/v1/auth/refresh", json={})
+        assert refresh_response.status_code == 401
+
+    async def test_revoke_all_keeps_current_session(self, client):
+        token = await register_and_login(client)
+        headers = {"Authorization": f"Bearer {token}"}
+
+        # Un segundo login crea otra sesión; la cookie apunta a la nueva.
+        login_response = await client.post(
+            "/api/v1/auth/login",
+            json={"email": "mateo@test.com", "password": VALID_PASSWORD},
+        )
+        assert login_response.status_code == 200
+
+        response = await client.post(
+            "/api/v1/users/sessions/revoke-all", headers=headers
+        )
+        assert response.status_code == 204
+
+        sessions = (
+            await client.get("/api/v1/users/sessions", headers=headers)
+        ).json()["data"]
+        assert len(sessions) >= 2
+        # Al menos una sesión queda revocada y la actual sigue activa.
+        assert any(not s["is_revoked"] for s in sessions)
+        assert any(s["is_revoked"] for s in sessions)
+
+        # El refresh de la sesión actual debe seguir funcionando.
+        refresh_response = await client.post("/api/v1/auth/refresh", json={})
+        assert refresh_response.status_code == 200
+
+    async def test_revoke_all_requires_authentication(self, client):
+        response = await client.post("/api/v1/users/sessions/revoke-all")
         assert response.status_code == 401

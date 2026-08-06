@@ -1,9 +1,12 @@
 """
 Router: /api/v1/users
 """
-from fastapi import APIRouter, Depends
+import uuid
+
+from fastapi import APIRouter, Depends, HTTPException, Query, Request, Response
 
 from app.api.deps import get_current_user
+from app.core.security import TokenType, decode_token
 from app.db.session import get_db
 from app.models.user import User
 from app.schemas.user import (
@@ -18,6 +21,7 @@ from app.schemas.user import (
     UserStatisticsResponse,
 )
 from app.use_cases.users.change_password import ChangePasswordUseCase
+from app.use_cases.users.export_data import ExportUserDataUseCase
 from app.use_cases.users.get_settings import GetSettingsUseCase
 from app.use_cases.users.get_statistics import GetUserStatisticsUseCase
 from app.use_cases.users.list_sessions import ListSessionHistoryUseCase
@@ -25,11 +29,15 @@ from app.use_cases.users.manage_profile import (
     DeleteUserUseCase,
     UpdateUserProfileUseCase,
 )
+from app.use_cases.users.revoke_all_sessions import RevokeAllSessionsUseCase
+from app.use_cases.users.revoke_session import RevokeSessionUseCase
 from app.use_cases.users.update_avatar import UpdateAvatarUseCase
 from app.use_cases.users.update_settings import UpdateSettingsUseCase
 from sqlalchemy.ext.asyncio import AsyncSession
 
 router = APIRouter(prefix="/users", tags=["Users"])
+
+REFRESH_COOKIE_KEY = "refresh_token"
 
 
 @router.get("/me", response_model=UserResponse)
@@ -51,13 +59,17 @@ async def update_me(
 
 @router.delete("/me", status_code=204)
 async def delete_me(
-    data: DeleteAccountRequest,
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
+    password: str | None = Query(default=None),
+    data: DeleteAccountRequest | None = None,
 ):
     """FR-010: Eliminar cuenta (requiere confirmar contraseña)."""
+    pwd = password or (data.password if data is not None else None)
+    if not pwd:
+        raise HTTPException(status_code=422, detail="Se requiere la contraseña.")
     use_case = DeleteUserUseCase(db)
-    await use_case.execute(current_user.id, data.password)
+    await use_case.execute(current_user.id, pwd)
 
 
 @router.get("/settings", response_model=UserSettingsResponse)
@@ -121,3 +133,51 @@ async def list_sessions(
     """FR-126: Consultar historial de sesiones."""
     use_case = ListSessionHistoryUseCase(db)
     return await use_case.execute(current_user.id)
+
+
+@router.delete("/sessions/{session_id}", status_code=204)
+async def revoke_session(
+    session_id: uuid.UUID,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """FR-126: Revocar una sesión específica del usuario."""
+    use_case = RevokeSessionUseCase(db)
+    await use_case.execute(current_user.id, session_id)
+    return None
+
+
+@router.post("/sessions/revoke-all", status_code=204)
+async def revoke_all_sessions(
+    request: Request,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """FR-126: Cerrar sesión en todos los dispositivos excepto el actual."""
+    current_jti: str | None = None
+    token = request.cookies.get(REFRESH_COOKIE_KEY)
+    if token:
+        try:
+            current_jti = decode_token(
+                token, expected_type=TokenType.REFRESH
+            ).get("jti")
+        except Exception:
+            current_jti = None
+    use_case = RevokeAllSessionsUseCase(db)
+    await use_case.execute(current_user.id, current_jti)
+    return None
+
+
+@router.get("/export")
+async def export_user_data(
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """FR-130: Exporta los datos del usuario como archivo ZIP."""
+    use_case = ExportUserDataUseCase(db)
+    result = await use_case.execute(current_user.id)
+    return Response(
+        content=result.content,
+        media_type=result.media_type,
+        headers={"Content-Disposition": f'attachment; filename="{result.filename}"'},
+    )

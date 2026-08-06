@@ -9,6 +9,8 @@ from decimal import Decimal
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
+from app.schemas.tag import TagResponse
+
 
 PAYMENT_METHOD_OPTIONS = {
     "Efectivo",
@@ -77,6 +79,7 @@ class CreateExpenseRequest(PaymentMethodValidator):
     payment_method: str | None = Field(None, max_length=50)
     location: str | None = Field(None, max_length=255)
     expense_date: date
+    tag_ids: list[uuid.UUID] = Field(default_factory=list)
 
 
 class UpdateExpenseRequest(PaymentMethodValidator):
@@ -88,6 +91,7 @@ class UpdateExpenseRequest(PaymentMethodValidator):
     location: str | None = Field(None, max_length=255)
     expense_date: date | None = None
     is_favorite: bool | None = None
+    tag_ids: list[uuid.UUID] | None = None
 
 
 class ExpenseResponse(BaseModel):
@@ -104,6 +108,7 @@ class ExpenseResponse(BaseModel):
     attachment_url: str | None
     expense_date: date
     is_favorite: bool
+    tags: list[TagResponse] = Field(default_factory=list)
     created_at: datetime
     updated_at: datetime
 

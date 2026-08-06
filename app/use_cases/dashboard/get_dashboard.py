@@ -11,8 +11,12 @@ from collections import defaultdict
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.financial_engine import (
+    category_dominance,
+    goal_progress,
+    savings_rate as fre_savings_rate,
+)
 from app.models.couple import CoupleStatus
-from app.models.goal import GoalStatus
 from app.repositories.couple_repository import CoupleRepository
 from app.repositories.goal_repository import GoalRepository
 from app.repositories.personal_category_repository import PersonalCategoryRepository
@@ -79,18 +83,14 @@ class GetDashboardUseCase:
             goals, _ = await self.goal_repository.list_by_user(user_id, limit=5)
 
         for goal in goals:
-            progress = (
-                float(goal.current_amount / goal.target_amount * 100)
-                if goal.target_amount > 0
-                else 0.0
-            )
+            progress = goal_progress(goal.current_amount, goal.target_amount)
             goals_data.append(
                 DashboardGoalSummary(
                     id=goal.id,
                     title=goal.title,
                     target_amount=goal.target_amount,
                     current_amount=goal.current_amount,
-                    progress_percentage=min(progress, 100.0),
+                    progress_percentage=float(progress),
                     target_date=goal.target_date,
                     status=goal.status.value,
                 )
@@ -108,9 +108,7 @@ class GetDashboardUseCase:
             "total_income": float(total_income),
             "total_expense": float(total_expense),
             "balance": float(balance),
-            "savings_rate": float(saving / total_income * 100)
-            if total_income > 0
-            else 0.0,
+            "savings_rate": float(fre_savings_rate(total_income, total_expense)),
             "transaction_count": len(expenses) + len(incomes),
             "monthly_breakdown": self._build_monthly_breakdown(expenses, incomes),
             "top_categories": self._build_top_categories(expenses, category_names),
@@ -119,7 +117,6 @@ class GetDashboardUseCase:
         ai_recommendations = self._generate_recommendations(
             total_income, total_expense, balance, goals_data
         )
-
         return DashboardResponse(
             balance=balance,
             income=total_income,
@@ -199,7 +196,7 @@ class GetDashboardUseCase:
             {
                 "category_name": name,
                 "total_amount": float(amount),
-                "percentage_of_total": float(amount / total_expense * 100),
+                "percentage_of_total": float(category_dominance(amount, total_expense)),
             }
             for name, amount in sorted(
                 totals.items(), key=lambda item: item[1], reverse=True
@@ -236,7 +233,7 @@ class GetDashboardUseCase:
         recommendations = []
 
         if total_income > 0:
-            savings_rate = float(balance / total_income * 100)
+            savings_rate = float(fre_savings_rate(total_income, total_expense))
             if savings_rate < 20:
                 recommendations.append(
                     "Tu tasa de ahorro es menor al 20%. Intenta reducir gastos variables."

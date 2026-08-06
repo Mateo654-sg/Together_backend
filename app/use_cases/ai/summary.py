@@ -2,12 +2,17 @@
 Use Case: AISummary (FR-101, FR-102).
 
 Genera resúmenes semanales y mensuales.
+
+Los KPIs los calcula el Financial Rules Engine; la IA solo redacta.
 """
 
 import uuid
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.financial_engine import net_cash_flow, savings_rate
+from app.repositories.personal_expense_repository import PersonalExpenseRepository
+from app.repositories.personal_income_repository import PersonalIncomeRepository
 from app.schemas.ai import AISummaryRequest, AISummaryResponse
 from app.services.ai.service import AIService
 
@@ -15,17 +20,20 @@ from app.services.ai.service import AIService
 class AISummaryUseCase:
     """Use Case: AISummary (FR-101, FR-102).
 
-    Genera resúmenes semanales y mensuales de las finanzas del usuario.
+    Genera resúmenes semanales y mensuales de las finanzas del usuario
+    con KPIs calculados por el Financial Rules Engine.
     """
 
     def __init__(self, session: AsyncSession):
         self.session = session
         self.ai_service = AIService(session)
+        self.expense_repo = PersonalExpenseRepository(session)
+        self.income_repo = PersonalIncomeRepository(session)
 
     async def execute(
         self, user_id: uuid.UUID, data: AISummaryRequest, summary_type: str = "monthly"
     ) -> AISummaryResponse:
-        """Genera un resumen financiero con IA.
+        """Genera un resumen financiero con KPIs reales.
 
         Args:
             user_id: UUID del usuario.
@@ -46,19 +54,21 @@ class AISummaryUseCase:
             user_id, question, endpoint=f"{summary_type}-summary"
         )
 
-        highlights = [
-            "Ingresos estables respecto al período anterior.",
-            "Reducción del 8% en gastos variables.",
-            "Ahorro acumulado del 32% de ingresos.",
-        ]
+        total_income = await self.income_repo.get_total_by_user(user_id)
+        expenses, _ = await self.expense_repo.list_by_user(user_id, page=1, limit=1000)
+        total_expense = sum(e.amount for e in expenses)
+        savings = net_cash_flow(total_income, total_expense)
+        saving_rate = savings_rate(total_income, total_expense)
 
         kpis = {
-            "total_income": 2500000,
-            "total_expense": 1700000,
-            "savings": 800000,
-            "savings_rate": 32.0,
-            "transactions": 45,
+            "total_income": float(total_income),
+            "total_expense": float(total_expense),
+            "savings": float(savings),
+            "savings_rate": float(saving_rate),
+            "transactions": len(expenses) + len(await self.income_repo.list_by_user(user_id, page=1, limit=1000)),
         }
+
+        highlights = self._build_highlights(saving_rate, savings, len(expenses))
 
         return AISummaryResponse(
             period=period,
@@ -66,3 +76,17 @@ class AISummaryUseCase:
             highlights=highlights,
             kpis=kpis,
         )
+
+    @staticmethod
+    def _build_highlights(saving_rate, savings, transaction_count: int) -> list[str]:
+        highlights = []
+        if saving_rate >= 30:
+            highlights.append(f"Ahorro acumulado del {float(saving_rate):.0f}% de ingresos.")
+        else:
+            highlights.append("Registra tus movimientos para mejorar tu tasa de ahorro.")
+        if savings > 0:
+            highlights.append("Ingresos superan a los gastos en el período.")
+        else:
+            highlights.append("Revisa tus gastos: los gastos superan los ingresos.")
+        highlights.append(f"{transaction_count} transacciones registradas en el período.")
+        return highlights

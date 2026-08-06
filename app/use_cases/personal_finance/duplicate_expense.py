@@ -54,6 +54,7 @@ class DuplicateExpenseUseCase:
             expense_date=date.today(),
             is_favorite=False,
         )
+        duplicate.tags = list(original.tags)
         await self.repository.create(duplicate)
         await self.session.commit()
         return duplicate

@@ -9,6 +9,7 @@ from decimal import Decimal
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import joinedload
 
 from app.models.debt import Debt, DebtStatus
 from app.repositories.base_repository import BaseRepository
@@ -40,10 +41,21 @@ class DebtRepository(BaseRepository[Debt]):
                 Debt.status == DebtStatus.PENDING,
                 Debt.deleted_at.is_(None),
             )
+            .options(joinedload(Debt.shared_expense))
             .order_by(Debt.created_at.desc())
         )
         result = await self.session.execute(stmt)
         return list(result.scalars().all())
+
+    async def get_by_id(self, id: uuid.UUID) -> Debt | None:
+        """Obtiene una deuda por ID con su gasto compartido asociado cargado."""
+        stmt = (
+            select(Debt)
+            .where(Debt.id == id, Debt.deleted_at.is_(None))
+            .options(joinedload(Debt.shared_expense))
+        )
+        result = await self.session.execute(stmt)
+        return result.scalar_one_or_none()
 
     async def list_for_couple(self, couple_id: uuid.UUID) -> list[Debt]:
         """Lista todas las deudas de una pareja (historial completo).
@@ -65,6 +77,7 @@ class DebtRepository(BaseRepository[Debt]):
                 SharedExpense.couple_id == couple_id,
                 Debt.deleted_at.is_(None),
             )
+            .options(joinedload(Debt.shared_expense))
             .order_by(Debt.created_at.desc())
         )
         result = await self.session.execute(stmt)

@@ -5,8 +5,11 @@ Encapsula todas las consultas relacionadas al modelo User.
 Nunca se accede a la base de datos directamente desde services o use cases.
 """
 
+import uuid
+
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import selectinload
 
 from app.models.user import User
 from app.repositories.base_repository import BaseRepository
@@ -22,6 +25,26 @@ class UserRepository(BaseRepository[User]):
 
     def __init__(self, session: AsyncSession):
         super().__init__(session, User)
+
+    async def get_by_id(self, id: uuid.UUID) -> User | None:
+        """Busca un usuario por ID con sus relaciones cargadas (async-safe).
+
+        Carga la configuración (settings) de forma eager para evitar
+        lazy loading en contexto async (MissingGreenlet).
+
+        Args:
+            id: UUID del usuario.
+
+        Returns:
+            El usuario encontrado o None.
+        """
+        stmt = (
+            select(User)
+            .where(User.id == id, User.deleted_at.is_(None))
+            .options(selectinload(User.settings))
+        )
+        result = await self.session.execute(stmt)
+        return result.scalar_one_or_none()
 
     async def get_by_email(self, email: str) -> User | None:
         """Busca un usuario por su correo electrónico (normalizado a minúsculas).

@@ -4,7 +4,7 @@ Schemas Pydantic del módulo de usuarios.
 import uuid
 from datetime import date, datetime
 
-from pydantic import BaseModel, ConfigDict, EmailStr, Field
+from pydantic import BaseModel, ConfigDict, EmailStr, Field, field_validator
 
 
 class UserResponse(BaseModel):
@@ -57,6 +57,13 @@ class UpdateUserSettingsRequest(BaseModel):
 
 class UpdateAvatarRequest(BaseModel):
     avatar_url: str = Field(..., max_length=500)
+
+    @field_validator("avatar_url")
+    @classmethod
+    def not_blank(cls, v: str) -> str:
+        if not v.strip():
+            raise ValueError("La URL del avatar no puede estar vacía.")
+        return v.strip()
 
 
 class UserStatisticsResponse(BaseModel):

@@ -10,6 +10,12 @@ from decimal import Decimal
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.exceptions import ConflictException
+from app.financial_engine import (
+    goal_progress,
+    personal_balance,
+    savings_rate as fre_savings_rate,
+    shared_balance,
+)
 from app.models.couple import CoupleStatus
 from app.models.goal import GoalStatus
 from app.repositories.couple_repository import CoupleRepository
@@ -74,8 +80,8 @@ class GetCoupleDashboardUseCase:
         for inc in shared_incomes:
             shared_income_total += inc.amount
 
-        personal_balance = personal_income - personal_expense_total
-        shared_balance = shared_income_total - shared_expenses_total
+        personal_balance_val = personal_balance(personal_income, personal_expense_total)
+        shared_balance_val = shared_balance(shared_income_total, shared_expenses_total)
         total_income = personal_income + shared_income_total
         total_expense = personal_expense_total + shared_expenses_total
         saving = total_income - total_expense
@@ -85,18 +91,14 @@ class GetCoupleDashboardUseCase:
         )
         goals_data = []
         for goal in goals:
-            progress = (
-                float(goal.current_amount / goal.target_amount * 100)
-                if goal.target_amount > 0
-                else 0.0
-            )
+            progress = goal_progress(goal.current_amount, goal.target_amount)
             goals_data.append(
                 DashboardGoalSummary(
                     id=goal.id,
                     title=goal.title,
                     target_amount=goal.target_amount,
                     current_amount=goal.current_amount,
-                    progress_percentage=min(progress, 100.0),
+                    progress_percentage=float(progress),
                     target_date=goal.target_date,
                     status=goal.status.value,
                 )
@@ -146,7 +148,7 @@ class GetCoupleDashboardUseCase:
 
         ai_recommendations = []
         if total_income > 0:
-            savings_rate = float(saving / total_income * 100)
+            savings_rate = float(fre_savings_rate(total_income, total_expense))
             if savings_rate < 20:
                 ai_recommendations.append(
                     "Su tasa de ahorro conjunta es menor al 20%. Revisen gastos compartidos."
@@ -158,8 +160,8 @@ class GetCoupleDashboardUseCase:
             )
 
         return CoupleDashboardResponse(
-            personal_balance=personal_balance,
-            shared_balance=shared_balance,
+            personal_balance=personal_balance_val,
+            shared_balance=shared_balance_val,
             total_income=total_income,
             total_expense=total_expense,
             shared_income=shared_income_total,

@@ -11,15 +11,30 @@ fueron creadas, y pytest-asyncio crea un event loop nuevo por test.
 """
 from collections.abc import AsyncGenerator
 
+import os
+
+import pytest
 import pytest_asyncio
 from httpx import ASGITransport, AsyncClient
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 
+from app.core.rate_limit import limiter
 from app.db.base import Base
 from app.db.session import get_db
 from app.main import app
 
-TEST_DATABASE_URL = "postgresql+asyncpg://together:together@localhost:5432/together_test_db"
+TEST_DATABASE_URL = os.getenv(
+    "TEST_DATABASE_URL",
+    "postgresql+asyncpg://together:together@localhost:5432/together_test_db",
+)
+
+
+@pytest.fixture(autouse=True)
+def _reset_rate_limiter():
+    """Aísla el rate limiter entre tests (Documento 13)."""
+    limiter.reset()
+    yield
+    limiter.reset()
 
 
 @pytest_asyncio.fixture

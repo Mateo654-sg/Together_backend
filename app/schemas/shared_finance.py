@@ -113,6 +113,7 @@ class DebtResponse(BaseModel):
     shared_expense_id: uuid.UUID | None
     amount: Decimal
     status: str
+    description: str | None = None
     created_at: datetime
 
 

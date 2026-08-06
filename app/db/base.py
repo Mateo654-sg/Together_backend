@@ -7,11 +7,16 @@ Según el Documento 07 — Diseño de Base de Datos:
 - Nunca se realiza DELETE físico.
 """
 import uuid
-from datetime import datetime
+from datetime import datetime, timezone
 
 from sqlalchemy import DateTime, func
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
+
+
+def _utcnow() -> datetime:
+    """Devuelve la fecha/hora actual en UTC (para defaults Python-side)."""
+    return datetime.now(timezone.utc)
 
 
 class Base(DeclarativeBase):
@@ -49,12 +54,16 @@ class TimestampMixin:
     """
 
     created_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), server_default=func.now(), nullable=False
+        DateTime(timezone=True),
+        default=_utcnow,
+        server_default=func.now(),
+        nullable=False,
     )
     updated_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
+        default=_utcnow,
         server_default=func.now(),
-        onupdate=func.now(),
+        onupdate=_utcnow,
         nullable=False,
     )
     deleted_at: Mapped[datetime | None] = mapped_column(

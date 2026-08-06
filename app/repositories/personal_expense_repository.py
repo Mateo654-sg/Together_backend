@@ -11,6 +11,7 @@ from decimal import Decimal
 
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import selectinload
 
 from app.models.personal_expense import PersonalExpense
 from app.repositories.base_repository import BaseRepository
@@ -90,6 +91,7 @@ class PersonalExpenseRepository(BaseRepository[PersonalExpense]):
 
         stmt = (
             select(PersonalExpense)
+            .options(selectinload(PersonalExpense.tags))
             .where(*base_filter)
             .order_by(order)
             .offset((page - 1) * limit)
@@ -112,10 +114,14 @@ class PersonalExpenseRepository(BaseRepository[PersonalExpense]):
         Returns:
             El gasto encontrado o None si no existe o no pertenece al usuario.
         """
-        stmt = select(PersonalExpense).where(
-            PersonalExpense.id == expense_id,
-            PersonalExpense.user_id == user_id,
-            PersonalExpense.deleted_at.is_(None),
+        stmt = (
+            select(PersonalExpense)
+            .options(selectinload(PersonalExpense.tags))
+            .where(
+                PersonalExpense.id == expense_id,
+                PersonalExpense.user_id == user_id,
+                PersonalExpense.deleted_at.is_(None),
+            )
         )
         result = await self.session.execute(stmt)
         return result.scalar_one_or_none()

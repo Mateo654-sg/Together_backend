@@ -2,16 +2,28 @@
 Use Case: AIFinancialHealth.
 
 Evalúa la salud financiera del usuario.
+
+El cálculo lo realiza el Financial Rules Engine (Motor 13).
+La IA solo interpreta los resultados.
 """
 
 import uuid
+from decimal import Decimal
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.financial_engine import (
+    expense_ratio,
+    financial_score,
+    health_status_en,
+    liquidity_ratio,
+    monthly_average,
+    net_cash_flow,
+    savings_rate,
+)
 from app.repositories.personal_expense_repository import PersonalExpenseRepository
 from app.repositories.personal_income_repository import PersonalIncomeRepository
 from app.schemas.ai import AIFinancialHealthResponse
-from app.services.ai.service import AIService
 
 
 class AIFinancialHealthUseCase:
@@ -23,7 +35,6 @@ class AIFinancialHealthUseCase:
 
     def __init__(self, session: AsyncSession):
         self.session = session
-        self.ai_service = AIService(session)
         self.expense_repo = PersonalExpenseRepository(session)
         self.income_repo = PersonalIncomeRepository(session)
 
@@ -40,33 +51,36 @@ class AIFinancialHealthUseCase:
         expenses, _ = await self.expense_repo.list_by_user(user_id, page=1, limit=1000)
         total_expense = sum(e.amount for e in expenses)
 
-        balance = total_income - total_expense
-        savings_rate = float(balance / total_income * 100) if total_income > 0 else 0
+        balance = net_cash_flow(total_income, total_expense)
+        saving_rate = savings_rate(total_income, total_expense)
+        ratio = expense_ratio(total_expense, total_income)
 
-        if savings_rate >= 30:
-            status = "Excellent"
-            score = 90
-        elif savings_rate >= 20:
-            status = "Good"
-            score = 75
-        elif savings_rate >= 10:
-            status = "Fair"
-            score = 55
-        else:
-            status = "Critical"
-            score = 30
+        average_monthly = monthly_average(
+            total_expense, max(len({(e.expense_date.year, e.expense_date.month) for e in expenses if e.expense_date}), 1)
+        )
+        liquidity = liquidity_ratio(balance, average_monthly)
+
+        score = financial_score(
+            savings_rate=saving_rate,
+            budget_consumption=ratio,
+            debt=Decimal("100"),
+            liquidity=liquidity,
+            goals=Decimal("0"),
+            cash_flow=balance,
+        )
+
+        status = health_status_en(score)
 
         indicators = {
             "liquidity": float(balance),
-            "savings_rate": savings_rate,
-            "expense_ratio": float(total_expense / total_income * 100)
-            if total_income > 0
-            else 100,
+            "liquidity_ratio": float(liquidity),
+            "savings_rate": float(saving_rate),
+            "expense_ratio": float(ratio),
             "stability": "Stable" if total_income > 0 else "No income",
         }
 
         recommendations = []
-        if savings_rate < 20:
+        if saving_rate < Decimal("20"):
             recommendations.append(
                 "Tu tasa de ahorro es baja. Intenta reducir gastos hormiga."
             )
@@ -81,7 +95,7 @@ class AIFinancialHealthUseCase:
 
         return AIFinancialHealthResponse(
             status=status,
-            score=score,
+            score=min(int(score), 100),
             indicators=indicators,
             recommendations=recommendations,
         )

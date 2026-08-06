@@ -1,13 +1,19 @@
 """
 Use Case: ListGoals (FR-061-List).
 
-Lista las metas de la pareja o personales con paginación y filtro por estado.
+Lista las metas compartidas de la pareja con paginación y filtro por estado.
 """
 
 import uuid
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.exceptions import ConflictException
+from app.financial_engine.goals import (
+    goal_days_remaining,
+    goal_predicted_completion,
+    goal_progress,
+)
 from app.models.couple import CoupleStatus
 from app.models.goal import GoalStatus
 from app.repositories.couple_repository import CoupleRepository
@@ -18,7 +24,7 @@ from app.schemas.goal import GoalListResponse, GoalResponse
 class ListGoalsUseCase:
     """Use Case: ListGoals (FR-061-List).
 
-    Lista las metas de la pareja o personales con paginación y filtro por estado.
+    Lista las metas compartidas de la pareja con paginación y filtro por estado.
     """
 
     def __init__(self, session: AsyncSession):
@@ -44,18 +50,19 @@ class ListGoalsUseCase:
 
         Returns:
             GoalListResponse con metas enriquecidas (progreso, días restantes, predicción).
+
+        Raises:
+            ConflictException: Si el usuario no tiene una pareja activa.
         """
         couple = await self.couple_repository.get_active_for_user(user_id)
-        is_personal = couple is None or couple.status != CoupleStatus.ACCEPTED
+        if couple is None or couple.status != CoupleStatus.ACCEPTED:
+            raise ConflictException(
+                "Necesitas una pareja activa para consultar metas compartidas."
+            )
 
-        if is_personal:
-            goals, total = await self.goal_repository.list_by_user(
-                user_id, page=page, limit=limit, status=status
-            )
-        else:
-            goals, total = await self.goal_repository.list_by_couple(
-                couple.id, page=page, limit=limit, status=status
-            )
+        goals, total = await self.goal_repository.list_by_couple(
+            couple.id, page=page, limit=limit, status=status
+        )
 
         data = []
         for goal in goals:
@@ -75,39 +82,27 @@ class ListGoalsUseCase:
             },
         )
 
-    def _calculate_progress(self, goal) -> float | None:
+    @staticmethod
+    def _calculate_progress(goal) -> float | None:
         if goal.target_amount <= 0:
             return None
-        return min(float(goal.current_amount / goal.target_amount * 100), 100.0)
+        return float(goal_progress(goal.current_amount, goal.target_amount))
 
-    def _calculate_days_remaining(self, goal) -> int | None:
+    @staticmethod
+    def _calculate_days_remaining(goal) -> int | None:
         if goal.target_date is None:
             return None
-        from datetime import date
+        return goal_days_remaining(goal.target_date)
 
-        delta = goal.target_date - date.today()
-        return max(delta.days, 0)
-
-    def _predict_completion(self, goal):
+    @staticmethod
+    def _predict_completion(goal):
         if goal.target_amount <= 0 or goal.current_amount <= 0:
             return None
         if goal.target_date is None:
             return None
-        from datetime import date, timedelta
-
-        progress_ratio = float(goal.current_amount / goal.target_amount)
-        if progress_ratio >= 1.0:
-            return date.today()
-
-        days_elapsed = (date.today() - goal.created_at.date()).days
-        if days_elapsed <= 0:
-            return goal.target_date
-
-        daily_rate = float(goal.current_amount) / days_elapsed
-        remaining_amount = float(goal.target_amount - goal.current_amount)
-        if daily_rate <= 0:
-            return goal.target_date
-
-        days_needed = int(remaining_amount / daily_rate)
-        predicted = date.today() + timedelta(days=days_needed)
-        return predicted
+        return goal_predicted_completion(
+            goal.current_amount,
+            goal.target_amount,
+            goal.created_at.date(),
+            goal.target_date,
+        )

@@ -5,7 +5,6 @@ Orquesta las consultas de IA a través del AI Gateway.
 """
 
 import time
-import asyncio
 import uuid
 
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -72,6 +71,7 @@ class AIService:
         await self.session.commit()
 
         return {
+            "history_id": str(history.id),
             "answer": result["answer"],
             "tokens_used": result.get("tokens_input", 0)
             + result.get("tokens_output", 0),

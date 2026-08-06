@@ -4,6 +4,8 @@ Use Case: RegisterUser (FR-001).
 Crea una nueva cuenta de usuario mediante correo electrónico y emite tokens.
 """
 
+import hashlib
+import secrets
 from datetime import datetime, timedelta, timezone
 
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -11,10 +13,14 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.config import settings as app_settings
 from app.core.exceptions import EmailAlreadyExistsException
 from app.core.security import create_access_token, create_refresh_token, hash_password
+from app.models.email_verification_token import EmailVerificationToken
 from app.models.personal_category import PersonalCategory
 from app.models.session import Session as SessionModel
 from app.models.user import User
 from app.models.user_settings import UserSettings
+from app.repositories.email_verification_token_repository import (
+    EmailVerificationTokenRepository,
+)
 from app.repositories.personal_category_repository import PersonalCategoryRepository
 from app.repositories.user_repository import UserRepository
 from app.schemas.auth import RegisterRequest, TokenResponse
@@ -78,6 +84,16 @@ class RegisterUserUseCase:
         )
         await self.user_repository.create(user)
 
+        # Token de verificación de correo (flujo "Verificar correo" — Doc 05)
+        raw_verification_token = secrets.token_urlsafe(32)
+        verification_hash = hashlib.sha256(raw_verification_token.encode()).hexdigest()
+        verification_token = EmailVerificationToken(
+            user_id=user.id,
+            token_hash=verification_hash,
+            expires_at=datetime.now(timezone.utc) + timedelta(hours=24),
+        )
+        await EmailVerificationTokenRepository(self.session).create(verification_token)
+
         # Crear configuración por defecto (Tabla 2 — user_settings)
         settings_obj = UserSettings(user_id=user.id)
         self.session.add(settings_obj)
@@ -109,4 +125,8 @@ class RegisterUserUseCase:
 
         await self.session.commit()
 
-        return TokenResponse(access_token=access_token, refresh_token=refresh_token)
+        return TokenResponse(
+            access_token=access_token,
+            refresh_token=refresh_token,
+            verification_token=raw_verification_token,
+        )

@@ -1,4 +1,3 @@
-import uuid
 from datetime import datetime, timezone
 
 from sqlalchemy import select
@@ -19,7 +18,7 @@ class PasswordResetTokenRepository:
     async def get_valid_by_token_hash(self, token_hash: str) -> PasswordResetToken | None:
         stmt = select(PasswordResetToken).where(
             PasswordResetToken.token_hash == token_hash,
-            PasswordResetToken.used == False,
+            PasswordResetToken.used.is_(False),
             PasswordResetToken.expires_at > datetime.now(timezone.utc),
         )
         result = await self.session.execute(stmt)

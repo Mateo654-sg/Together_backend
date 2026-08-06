@@ -9,7 +9,7 @@ VALID_PASSWORD = "SuperSegura123!"
 
 
 async def register_and_login(client, email):
-    await client.post(
+    response = await client.post(
         "/api/v1/auth/register",
         json={
             "first_name": "Usuario",
@@ -18,6 +18,11 @@ async def register_and_login(client, email):
             "password": VALID_PASSWORD,
         },
     )
+    verification_token = response.json().get("verification_token")
+    if verification_token:
+        await client.post(
+            "/api/v1/auth/verify-email", json={"token": verification_token}
+        )
     login_response = await client.post(
         "/api/v1/auth/login", json={"email": email, "password": VALID_PASSWORD}
     )

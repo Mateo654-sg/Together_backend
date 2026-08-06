@@ -17,6 +17,7 @@ class AIChatRequest(BaseModel):
 
 
 class AIChatResponse(BaseModel):
+    history_id: uuid.UUID | None = None
     answer: str
     tokens_used: int = 0
     provider: str = "mock"

@@ -54,5 +54,10 @@ class Debt(Base, UUIDMixin, TimestampMixin):
     creditor: Mapped["User"] = relationship(foreign_keys=[creditor_id])
     shared_expense: Mapped["SharedExpense | None"] = relationship()
 
+    @property
+    def description(self) -> str | None:
+        """Descripción del gasto compartido que originó la deuda (si existe)."""
+        return self.shared_expense.description if self.shared_expense else None
+
     def __repr__(self) -> str:
         return f"<Debt id={self.id} amount={self.amount} status={self.status}>"

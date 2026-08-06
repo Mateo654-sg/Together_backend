@@ -5,7 +5,6 @@ Endpoint para subir imágenes (avatars, metas, etc.).
 """
 
 import base64
-import uuid
 
 from fastapi import APIRouter, Depends, File, UploadFile, status
 from fastapi.responses import JSONResponse

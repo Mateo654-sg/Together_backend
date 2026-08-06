@@ -7,7 +7,7 @@ VALID_PASSWORD = "SuperSegura123!"
 
 
 async def register_and_login(client, email):
-    await client.post(
+    response = await client.post(
         "/api/v1/auth/register",
         json={
             "first_name": "Usuario",
@@ -16,6 +16,11 @@ async def register_and_login(client, email):
             "password": VALID_PASSWORD,
         },
     )
+    verification_token = response.json().get("verification_token")
+    if verification_token:
+        await client.post(
+            "/api/v1/auth/verify-email", json={"token": verification_token}
+        )
     login_response = await client.post(
         "/api/v1/auth/login", json={"email": email, "password": VALID_PASSWORD}
     )
@@ -27,11 +32,16 @@ def auth_headers(token: str) -> dict:
 
 
 class TestListCategories:
-    async def test_empty_list_when_no_categories(self, client):
+    async def test_default_categories_created_on_registration(self, client):
+        """Tras el registro se crean las 12 categorías por defecto."""
         token = await register_and_login(client, "mateo@test.com")
         response = await client.get("/api/v1/categories", headers=auth_headers(token))
         assert response.status_code == 200
-        assert response.json() == []
+        data = response.json()
+        assert len(data) == 12
+        names = [c["name"] for c in data]
+        assert "Alimentación" in names
+        assert "Salario" in names
 
     async def test_requires_authentication(self, client):
         response = await client.get("/api/v1/categories")
@@ -58,11 +68,11 @@ class TestCreateCategory:
         response = await client.post(
             "/api/v1/categories",
             headers=auth_headers(token),
-            json={"name": "Transporte"},
+            json={"name": "Mascotas"},
         )
         assert response.status_code == 201
         data = response.json()
-        assert data["name"] == "Transporte"
+        assert data["name"] == "Mascotas"
         assert data["icon"] is None
         assert data["color"] is None
 
@@ -122,7 +132,7 @@ class TestUpdateCategory:
         create_resp = await client.post(
             "/api/v1/categories",
             headers=headers,
-            json={"name": "Salud"},
+            json={"name": "Viajes"},
         )
         cat_id = create_resp.json()["id"]
 
@@ -153,7 +163,7 @@ class TestUpdateCategory:
             "/api/v1/categories", headers=headers, json={"name": "Comida"}
         )
         create_resp = await client.post(
-            "/api/v1/categories", headers=headers, json={"name": "Salud"}
+            "/api/v1/categories", headers=headers, json={"name": "Mascotas"}
         )
         cat_id = create_resp.json()["id"]
 
@@ -179,9 +189,11 @@ class TestDeleteCategory:
         )
         assert response.status_code == 204
 
-        # Verify it's gone from list
+        # Verify it's gone from list (quedan las 12 por defecto)
         list_resp = await client.get("/api/v1/categories", headers=headers)
-        assert len(list_resp.json()) == 0
+        names = [c["name"] for c in list_resp.json()]
+        assert "Comida" not in names
+        assert len(names) == 12
 
     async def test_delete_nonexistent_returns_404(self, client):
         token = await register_and_login(client, "mateo@test.com")
