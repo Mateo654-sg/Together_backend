@@ -3,6 +3,7 @@ Router: /api/v1/shared-incomes
 
 Ingresos compartidos entre la pareja (FR-042).
 """
+import uuid
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, Query, status
@@ -15,9 +16,12 @@ from app.schemas.shared_finance import (
     CreateSharedIncomeRequest,
     SharedIncomeListResponse,
     SharedIncomeResponse,
+    UpdateSharedIncomeRequest,
 )
 from app.use_cases.shared_finance.create_shared_income import CreateSharedIncomeUseCase
+from app.use_cases.shared_finance.delete_shared_income import DeleteSharedIncomeUseCase
 from app.use_cases.shared_finance.list_shared_incomes import ListSharedIncomesUseCase
+from app.use_cases.shared_finance.update_shared_income import UpdateSharedIncomeUseCase
 
 router = APIRouter(prefix="/shared-incomes", tags=["Shared Incomes"])
 
@@ -45,3 +49,26 @@ async def create_shared_income(
     """FR-042: Registra un ingreso compartido."""
     use_case = CreateSharedIncomeUseCase(db)
     return await use_case.execute(current_user.id, data)
+
+
+@router.put("/{income_id}", response_model=SharedIncomeResponse)
+async def update_shared_income(
+    income_id: uuid.UUID,
+    data: UpdateSharedIncomeRequest,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Edita un ingreso compartido de la pareja."""
+    use_case = UpdateSharedIncomeUseCase(db)
+    return await use_case.execute(current_user.id, income_id, data)
+
+
+@router.delete("/{income_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_shared_income(
+    income_id: uuid.UUID,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Elimina lógicamente un ingreso compartido de la pareja."""
+    use_case = DeleteSharedIncomeUseCase(db)
+    await use_case.execute(current_user.id, income_id)

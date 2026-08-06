@@ -84,6 +84,13 @@ class CreateSharedIncomeRequest(BaseModel):
     income_date: date
 
 
+class UpdateSharedIncomeRequest(BaseModel):
+    amount: Decimal | None = Field(None, gt=0, decimal_places=2)
+    description: str | None = Field(None, min_length=1, max_length=255)
+    notes: str | None = None
+    income_date: date | None = None
+
+
 class SharedIncomeResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
