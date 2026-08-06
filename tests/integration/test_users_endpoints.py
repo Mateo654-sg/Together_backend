@@ -90,7 +90,7 @@ class TestDeleteMe:
             "DELETE",
             "/api/v1/users/me",
             headers={"Authorization": f"Bearer {token}"},
-            params={"password": "incorrecta"},
+            json={"password": "incorrecta"},
         )
         assert response.status_code == 401
 
@@ -100,7 +100,7 @@ class TestDeleteMe:
             "DELETE",
             "/api/v1/users/me",
             headers={"Authorization": f"Bearer {token}"},
-            params={"password": VALID_PASSWORD},
+            json={"password": VALID_PASSWORD},
         )
         assert response.status_code == 204
 

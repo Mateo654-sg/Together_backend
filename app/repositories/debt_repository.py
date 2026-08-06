@@ -57,6 +57,29 @@ class DebtRepository(BaseRepository[Debt]):
         result = await self.session.execute(stmt)
         return result.scalar_one_or_none()
 
+    async def get_pending_by_shared_expense(
+        self, shared_expense_id: uuid.UUID
+    ) -> Debt | None:
+        """Obtiene la deuda pendiente asociada a un gasto compartido.
+
+        Args:
+            shared_expense_id: UUID del gasto compartido.
+
+        Returns:
+            La deuda pendiente del gasto o None si no existe o ya fue pagada.
+        """
+        stmt = (
+            select(Debt)
+            .where(
+                Debt.shared_expense_id == shared_expense_id,
+                Debt.status == DebtStatus.PENDING,
+                Debt.deleted_at.is_(None),
+            )
+            .options(joinedload(Debt.shared_expense))
+        )
+        result = await self.session.execute(stmt)
+        return result.scalar_one_or_none()
+
     async def list_for_couple(self, couple_id: uuid.UUID) -> list[Debt]:
         """Lista todas las deudas de una pareja (historial completo).
 

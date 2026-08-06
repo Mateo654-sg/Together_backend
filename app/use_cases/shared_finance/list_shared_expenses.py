@@ -74,6 +74,6 @@ class ListSharedExpensesUseCase:
                 "page": page,
                 "limit": limit,
                 "total": total,
-                "pages": pages,
+                "total_pages": pages,
             },
         )

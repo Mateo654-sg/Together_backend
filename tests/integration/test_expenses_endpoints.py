@@ -315,7 +315,7 @@ class TestDuplicateExpense:
         expense_id = create_resp.json()["id"]
 
         response = await client.post(
-            f"/api/v1/expenses/duplicate?expense_id={expense_id}",
+            f"/api/v1/expenses/{expense_id}/duplicate",
             headers=auth_headers(token),
         )
         assert response.status_code == 201
@@ -329,7 +329,7 @@ class TestDuplicateExpense:
         token = await register_and_login(client, "mateo@test.com")
         fake_id = str(uuid.uuid4())
         response = await client.post(
-            f"/api/v1/expenses/duplicate?expense_id={fake_id}",
+            f"/api/v1/expenses/{fake_id}/duplicate",
             headers=auth_headers(token),
         )
         assert response.status_code == 404

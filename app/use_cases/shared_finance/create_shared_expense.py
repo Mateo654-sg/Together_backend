@@ -5,20 +5,19 @@ Registra un gasto compartido y genera la deuda automáticamente
 según el tipo de división (50/50, porcentaje, monto personalizado).
 """
 
-import json
 import uuid
-from decimal import Decimal
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.exceptions import ConflictException, ValidationException
 from app.models.debt import Debt
-from app.models.shared_expense import SharedExpense, SplitType
+from app.models.shared_expense import SharedExpense
 from app.repositories.couple_repository import CoupleRepository
 from app.repositories.debt_repository import DebtRepository
 from app.repositories.shared_category_repository import SharedCategoryRepository
 from app.repositories.shared_expense_repository import SharedExpenseRepository
 from app.schemas.shared_finance import CreateSharedExpenseRequest
+from app.use_cases.shared_finance.split_utils import calculate_debt_amount
 
 
 class CreateSharedExpenseUseCase:
@@ -88,7 +87,7 @@ class CreateSharedExpenseUseCase:
         )
 
         # Generate debt based on split type
-        debt_amount = self._calculate_debt_amount(
+        debt_amount = calculate_debt_amount(
             data.amount, data.split_type, data.split_details
         )
 
@@ -103,30 +102,3 @@ class CreateSharedExpenseUseCase:
 
         await self.session.commit()
         return expense
-
-    def _calculate_debt_amount(
-        self,
-        total: Decimal,
-        split_type: SplitType,
-        split_details: str | None,
-    ) -> Decimal:
-        if split_type == SplitType.EQUAL:
-            return total / 2
-        if split_details:
-            try:
-                details = json.loads(split_details)
-            except (json.JSONDecodeError, TypeError):
-                raise ValidationException("split_details tiene un formato JSON inválido.")
-            if split_type == SplitType.PERCENTAGE:
-                pct = details.get("partner_percentage", 50)
-                if not isinstance(pct, (int, float)) or not (0 <= pct <= 100):
-                    raise ValidationException("partner_percentage debe estar entre 0 y 100.")
-                return total * Decimal(str(pct)) / 100
-            if split_type == SplitType.CUSTOM:
-                amount = details.get("partner_amount", 0)
-                if not isinstance(amount, (int, float)) or Decimal(str(amount)) < 0:
-                    raise ValidationException("partner_amount debe ser un monto válido.")
-                if Decimal(str(amount)) > total:
-                    raise ValidationException("partner_amount no puede exceder el total.")
-                return Decimal(str(amount))
-        return total / 2

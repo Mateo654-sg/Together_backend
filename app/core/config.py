@@ -39,7 +39,7 @@ class Settings(BaseSettings):
     app_env: str = "development"
     app_name: str = "Together API"
     app_version: str = "v1"
-    debug: bool = True
+    debug: bool = False
 
     # Database
     database_url: str

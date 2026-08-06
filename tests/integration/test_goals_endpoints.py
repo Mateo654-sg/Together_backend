@@ -376,3 +376,58 @@ class TestGoalStatistics:
         assert data["total_goals"] == 2
         assert data["active_goals"] == 2
         assert float(data["total_target"]) == 3000000
+
+
+class TestListGoalContributions:
+    async def test_couple_member_can_list_contributions(self, client):
+        mateo_token, salome_token = await create_couple(
+            client, "mateo@test.com", "salome@test.com"
+        )
+        await create_income(client, mateo_token)
+
+        create_resp = await client.post(
+            "/api/v1/goals",
+            headers=auth_headers(mateo_token),
+            json={"title": "Viaje", "target_amount": 1000000},
+        )
+        goal_id = create_resp.json()["id"]
+
+        await client.post(
+            "/api/v1/goals/contribute",
+            headers=auth_headers(mateo_token),
+            json={"goal_id": goal_id, "amount": 200000},
+        )
+
+        response = await client.get(
+            f"/api/v1/goals/{goal_id}/contributions",
+            headers=auth_headers(salome_token),
+        )
+        assert response.status_code == 200
+        data = response.json()
+        assert len(data["data"]) == 1
+
+    async def test_foreign_user_cannot_list_contributions(self, client):
+        mateo_token, salome_token = await create_couple(
+            client, "mateo@test.com", "salome@test.com"
+        )
+        stranger_token = await register_and_login(client, "extra@test.com")
+        await create_income(client, mateo_token)
+
+        create_resp = await client.post(
+            "/api/v1/goals",
+            headers=auth_headers(mateo_token),
+            json={"title": "Privada", "target_amount": 1000000},
+        )
+        goal_id = create_resp.json()["id"]
+
+        await client.post(
+            "/api/v1/goals/contribute",
+            headers=auth_headers(mateo_token),
+            json={"goal_id": goal_id, "amount": 100000},
+        )
+
+        response = await client.get(
+            f"/api/v1/goals/{goal_id}/contributions",
+            headers=auth_headers(stranger_token),
+        )
+        assert response.status_code == 404

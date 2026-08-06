@@ -56,7 +56,7 @@ class UpdateUserSettingsRequest(BaseModel):
 
 
 class UpdateAvatarRequest(BaseModel):
-    avatar_url: str = Field(..., max_length=500)
+    avatar_url: str = Field(..., max_length=2_000_000)
 
     @field_validator("avatar_url")
     @classmethod
@@ -76,8 +76,15 @@ class UserStatisticsResponse(BaseModel):
 
 
 class ChangePasswordRequest(BaseModel):
-    current_password: str = Field(..., min_length=8, max_length=128)
-    new_password: str = Field(..., min_length=8, max_length=128)
+    current_password: str = Field(..., min_length=1, max_length=128)
+    new_password: str = Field(..., min_length=12, max_length=128)
+
+    @field_validator("new_password")
+    @classmethod
+    def password_strength(cls, v: str) -> str:
+        from app.schemas.auth import validate_strong_password
+
+        return validate_strong_password(v)
 
 
 class DeleteAccountRequest(BaseModel):

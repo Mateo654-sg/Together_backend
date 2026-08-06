@@ -8,9 +8,7 @@ Formato de respuesta de error oficial (Documento 08):
     "errors": []
 }
 """
-import asyncio
 import logging
-from concurrent.futures import ThreadPoolExecutor
 
 from fastapi import FastAPI, Request, status
 from fastapi.exceptions import RequestValidationError
@@ -28,19 +26,6 @@ from app.middleware.security_headers import SecurityHeadersMiddleware
 
 logger = logging.getLogger(__name__)
 
-_executor = ThreadPoolExecutor(max_workers=1)
-
-
-def _run_alembic_upgrade():
-    try:
-        from alembic import command
-        from alembic.config import Config
-        cfg = Config("alembic.ini")
-        command.upgrade(cfg, "head")
-        logger.info("Alembic migrations applied on startup.")
-    except Exception:
-        logger.exception("Alembic migration on startup failed.")
-
 
 app = FastAPI(
     title=settings.app_name,
@@ -49,12 +34,6 @@ app = FastAPI(
     redoc_url="/redoc",
     openapi_url="/openapi.json",
 )
-
-
-@app.on_event("startup")
-async def on_startup():
-    loop = asyncio.get_event_loop()
-    await loop.run_in_executor(_executor, _run_alembic_upgrade)
 
 
 app.state.limiter = limiter
@@ -102,6 +81,9 @@ async def unhandled_exception_handler(request: Request, exc: Exception):
             status_code=exc.status_code,
             content={"success": False, "message": exc.message, "errors": []},
         )
+    logger.exception(
+        "Unhandled error on %s %s", request.method, request.url.path, exc_info=exc
+    )
     return JSONResponse(
         status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
         content={

@@ -1,0 +1,11 @@
+-r requirements.txt
+
+# Testing
+pytest==8.3.3
+pytest-asyncio==0.24.0
+factory-boy==3.3.1
+coverage==7.6.1
+
+# Quality
+ruff==0.6.9
+bandit==1.7.9

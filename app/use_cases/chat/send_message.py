@@ -8,8 +8,10 @@ import uuid
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.exceptions import ForbiddenException
 from app.models.chat_message import ChatMessage, MessageType
 from app.repositories.chat_repository import ChatMessageRepository
+from app.repositories.couple_repository import CoupleRepository
 from app.schemas.chat import SendMessageRequest
 
 
@@ -39,6 +41,13 @@ class SendMessageUseCase:
             message_type = MessageType(data.message_type)
         except ValueError:
             message_type = MessageType.TEXT
+
+        couple = await CoupleRepository(self.session).get_active_for_user(sender_id)
+        if (
+            couple is None
+            or data.receiver_id not in (couple.partner_one_id, couple.partner_two_id)
+        ):
+            raise ForbiddenException("Solo puedes enviar mensajes a tu pareja vinculada.")
 
         message = ChatMessage(
             sender_id=sender_id,

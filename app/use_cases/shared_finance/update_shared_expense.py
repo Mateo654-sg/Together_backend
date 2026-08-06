@@ -18,9 +18,11 @@ from app.core.exceptions import (
 )
 from app.models.couple import CoupleStatus
 from app.repositories.couple_repository import CoupleRepository
+from app.repositories.debt_repository import DebtRepository
 from app.repositories.shared_category_repository import SharedCategoryRepository
 from app.repositories.shared_expense_repository import SharedExpenseRepository
 from app.schemas.shared_finance import UpdateSharedExpenseRequest
+from app.use_cases.shared_finance.split_utils import calculate_debt_amount
 
 if TYPE_CHECKING:
     from app.models.shared_expense import SharedExpense
@@ -37,6 +39,7 @@ class UpdateSharedExpenseUseCase:
         self.expense_repository = SharedExpenseRepository(session)
         self.category_repository = SharedCategoryRepository(session)
         self.couple_repository = CoupleRepository(session)
+        self.debt_repository = DebtRepository(session)
 
     async def execute(
         self,
@@ -89,6 +92,14 @@ class UpdateSharedExpenseUseCase:
             expense.split_details = data.split_details
         if data.expense_date is not None:
             expense.expense_date = data.expense_date
+
+        amount_changed = data.amount is not None or data.split_type is not None or data.split_details is not None
+        if amount_changed:
+            debt = await self.debt_repository.get_pending_by_shared_expense(expense.id)
+            if debt is not None:
+                debt.amount = calculate_debt_amount(
+                    expense.amount, expense.split_type, expense.split_details
+                )
 
         await self.session.commit()
         return expense

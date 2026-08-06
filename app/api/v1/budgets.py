@@ -21,6 +21,7 @@ from app.schemas.budget import (
 )
 from app.use_cases.budgets.create_budget import CreateBudgetUseCase
 from app.use_cases.budgets.delete_budget import DeleteBudgetUseCase
+from app.use_cases.budgets.get_budget import GetBudgetUseCase
 from app.use_cases.budgets.get_budget_alerts import GetBudgetAlertsUseCase
 from app.use_cases.budgets.list_budgets import ListBudgetsUseCase
 from app.use_cases.budgets.update_budget import UpdateBudgetUseCase
@@ -58,6 +59,29 @@ async def create_budget(
     return await use_case.execute(current_user.id, data)
 
 
+@router.get("/alerts", response_model=BudgetAlertListResponse)
+async def get_budget_alerts(
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+    month: int | None = Query(None, ge=1, le=12),
+    year: int | None = Query(None, ge=2020, le=2100),
+):
+    """FR-077, FR-078: Obtener alertas de presupuestos (80%, 90%, 100%)."""
+    use_case = GetBudgetAlertsUseCase(db)
+    return await use_case.execute(current_user.id, month=month, year=year)
+
+
+@router.get("/{budget_id}", response_model=BudgetResponse)
+async def get_budget(
+    budget_id: uuid.UUID,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Obtiene un presupuesto específico del usuario."""
+    use_case = GetBudgetUseCase(db)
+    return await use_case.execute(current_user.id, budget_id)
+
+
 @router.put("/{budget_id}", response_model=BudgetResponse)
 async def update_budget(
     budget_id: uuid.UUID,
@@ -79,15 +103,3 @@ async def delete_budget(
     """Eliminar un presupuesto (soft delete)."""
     use_case = DeleteBudgetUseCase(db)
     await use_case.execute(current_user.id, budget_id)
-
-
-@router.get("/alerts", response_model=BudgetAlertListResponse)
-async def get_budget_alerts(
-    current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
-    month: int | None = Query(None, ge=1, le=12),
-    year: int | None = Query(None, ge=2020, le=2100),
-):
-    """FR-077, FR-078: Obtener alertas de presupuestos (80%, 90%, 100%)."""
-    use_case = GetBudgetAlertsUseCase(db)
-    return await use_case.execute(current_user.id, month=month, year=year)

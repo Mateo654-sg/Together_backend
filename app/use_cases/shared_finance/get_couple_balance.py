@@ -12,6 +12,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.exceptions import ConflictException
 from app.models.couple import CoupleStatus
 from app.repositories.couple_repository import CoupleRepository
+from app.repositories.debt_repository import DebtRepository
 from app.repositories.shared_expense_repository import SharedExpenseRepository
 from app.repositories.shared_income_repository import SharedIncomeRepository
 from app.schemas.shared_finance import CoupleBalanceResponse
@@ -21,7 +22,7 @@ class GetCoupleBalanceUseCase:
     """Use Case: GetCoupleBalance (FR-051).
 
     Retorna el balance financiero entre la pareja: cuánto ha pagado
-    cada uno y la diferencia.
+    cada uno y la diferencia neta calculada desde las deudas reales.
     """
 
     def __init__(self, session: AsyncSession):
@@ -29,6 +30,7 @@ class GetCoupleBalanceUseCase:
         self.couple_repository = CoupleRepository(session)
         self.expense_repository = SharedExpenseRepository(session)
         self.income_repository = SharedIncomeRepository(session)
+        self.debt_repository = DebtRepository(session)
 
     async def execute(self, user_id: uuid.UUID) -> CoupleBalanceResponse:
         """Calcula el balance financiero de la pareja.
@@ -56,9 +58,15 @@ class GetCoupleBalanceUseCase:
             couple.id, couple.partner_two_id
         )
 
-        # Balance: positive means partner_one is owed money
-        half = total_expenses / 2
-        balance = partner_one_paid - half
+        # Balance neto según deudas pendientes (robusto a splits no 50/50):
+        # positivo significa que partner_one tiene saldo a favor.
+        owed_to_one = await self.debt_repository.get_total_owed_to_user(
+            couple.partner_one_id
+        )
+        one_owes = await self.debt_repository.get_total_user_owes(
+            couple.partner_one_id
+        )
+        balance = owed_to_one - one_owes
 
         return CoupleBalanceResponse(
             total_shared_expenses=total_expenses,

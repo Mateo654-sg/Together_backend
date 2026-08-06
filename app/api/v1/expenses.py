@@ -120,7 +120,9 @@ async def delete_expense(
 
 
 @router.post(
-    "/duplicate", response_model=ExpenseResponse, status_code=status.HTTP_201_CREATED
+    "/{expense_id}/duplicate",
+    response_model=ExpenseResponse,
+    status_code=status.HTTP_201_CREATED,
 )
 async def duplicate_expense(
     expense_id: uuid.UUID,

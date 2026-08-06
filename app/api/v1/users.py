@@ -3,9 +3,10 @@ Router: /api/v1/users
 """
 import uuid
 
-from fastapi import APIRouter, Depends, HTTPException, Query, Request, Response
+from fastapi import APIRouter, Depends, Request, Response
 
 from app.api.deps import get_current_user
+from app.core.exceptions import ValidationException
 from app.core.security import TokenType, decode_token
 from app.db.session import get_db
 from app.models.user import User
@@ -61,13 +62,12 @@ async def update_me(
 async def delete_me(
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
-    password: str | None = Query(default=None),
     data: DeleteAccountRequest | None = None,
 ):
     """FR-010: Eliminar cuenta (requiere confirmar contraseña)."""
-    pwd = password or (data.password if data is not None else None)
+    pwd = data.password if data is not None else None
     if not pwd:
-        raise HTTPException(status_code=422, detail="Se requiere la contraseña.")
+        raise ValidationException("Se requiere la contraseña.")
     use_case = DeleteUserUseCase(db)
     await use_case.execute(current_user.id, pwd)
 

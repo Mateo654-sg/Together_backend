@@ -14,6 +14,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
 from app.models.personal_expense import PersonalExpense
+from app.models.personal_category import PersonalCategory
 from app.repositories.base_repository import BaseRepository
 
 
@@ -26,6 +27,48 @@ class PersonalExpenseRepository(BaseRepository[PersonalExpense]):
 
     def __init__(self, session: AsyncSession):
         super().__init__(session, PersonalExpense)
+
+    async def get_total_by_user(self, user_id: uuid.UUID) -> Decimal:
+        """Suma total de gastos del usuario (sin soft-deleted).
+
+        Args:
+            user_id: UUID del usuario.
+
+        Returns:
+            Total de gastos como Decimal.
+        """
+        stmt = select(func.coalesce(func.sum(PersonalExpense.amount), 0)).where(
+            PersonalExpense.user_id == user_id,
+            PersonalExpense.deleted_at.is_(None),
+        )
+        result = await self.session.execute(stmt)
+        return Decimal(str(result.scalar_one()))
+
+    async def get_category_totals(
+        self, user_id: uuid.UUID, limit: int = 5
+    ) -> list[tuple[str | None, Decimal]]:
+        """Agrupa los gastos del usuario por categoría y los ordena por monto.
+
+        Args:
+            user_id: UUID del usuario.
+            limit: Máximo de categorías a devolver.
+
+        Returns:
+            Lista de tuplas (nombre_de_categoría, total) ordenada desc.
+        """
+        stmt = (
+            select(PersonalCategory.name, func.sum(PersonalExpense.amount))
+            .join(PersonalCategory, PersonalCategory.id == PersonalExpense.category_id)
+            .where(
+                PersonalExpense.user_id == user_id,
+                PersonalExpense.deleted_at.is_(None),
+            )
+            .group_by(PersonalCategory.name)
+            .order_by(func.sum(PersonalExpense.amount).desc())
+            .limit(limit)
+        )
+        result = await self.session.execute(stmt)
+        return [(row[0], Decimal(str(row[1]))) for row in result.all()]
 
     async def list_by_user(
         self,

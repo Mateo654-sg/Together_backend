@@ -174,4 +174,4 @@ async def list_goal_contributions(
 ):
     """Lista los aportes de una meta específica."""
     use_case = ListGoalContributionsUseCase(db)
-    return await use_case.execute(goal_id, page=page, limit=limit)
+    return await use_case.execute(current_user.id, goal_id, page=page, limit=limit)

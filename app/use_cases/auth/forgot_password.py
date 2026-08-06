@@ -36,7 +36,6 @@ class ForgotPasswordUseCase:
         await self.session.commit()
 
         logger.info(
-            "Password reset token generated for %s. In production, send via email. Token: %s",
+            "Password reset token generated for %s. In production, send via email.",
             email,
-            raw_token,
         )

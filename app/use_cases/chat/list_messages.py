@@ -8,7 +8,9 @@ import uuid
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.exceptions import ForbiddenException
 from app.repositories.chat_repository import ChatMessageRepository
+from app.repositories.couple_repository import CoupleRepository
 from app.schemas.chat import ChatMessageListResponse, ChatMessageResponse
 
 
@@ -40,7 +42,18 @@ class ListChatMessagesUseCase:
 
         Returns:
             ChatMessageListResponse con mensajes y paginación.
+
+        Raises:
+            ForbiddenException: Si el usuario no tiene pareja vinculada o el
+                partner_id no es su pareja.
         """
+        couple = await CoupleRepository(self.session).get_active_for_user(user_id)
+        if (
+            couple is None
+            or partner_id not in (couple.partner_one_id, couple.partner_two_id)
+        ):
+            raise ForbiddenException("Solo puedes chatear con tu pareja vinculada.")
+
         messages, total = await self.chat_repository.list_between_users(
             user_id, partner_id, page=page, limit=limit
         )
