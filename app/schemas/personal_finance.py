@@ -78,6 +78,7 @@ class CreateExpenseRequest(PaymentMethodValidator):
     notes: str | None = None
     payment_method: str | None = Field(None, max_length=50)
     location: str | None = Field(None, max_length=255)
+    attachment_url: str | None = Field(None, max_length=500)
     expense_date: date
     tag_ids: list[uuid.UUID] = Field(default_factory=list)
 
@@ -89,6 +90,7 @@ class UpdateExpenseRequest(PaymentMethodValidator):
     notes: str | None = None
     payment_method: str | None = Field(None, max_length=50)
     location: str | None = Field(None, max_length=255)
+    attachment_url: str | None = Field(None, max_length=500)
     expense_date: date | None = None
     is_favorite: bool | None = None
     tag_ids: list[uuid.UUID] | None = None

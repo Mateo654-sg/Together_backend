@@ -65,6 +65,7 @@ class CreateExpenseUseCase:
             notes=data.notes,
             payment_method=data.payment_method,
             location=data.location,
+            attachment_url=data.attachment_url,
             expense_date=data.expense_date,
             tags=tags,
         )

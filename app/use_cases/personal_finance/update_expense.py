@@ -54,6 +54,8 @@ class UpdateExpenseUseCase:
             expense.payment_method = data.payment_method
         if data.location is not None:
             expense.location = data.location
+        if data.attachment_url is not None:
+            expense.attachment_url = data.attachment_url
         if data.expense_date is not None:
             expense.expense_date = data.expense_date
         if data.is_favorite is not None:
