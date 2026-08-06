@@ -231,3 +231,40 @@ class BudgetRepository(BaseRepository[Budget]):
             )
 
         return alerts
+
+    async def _get_spent_amount(self, user_id: uuid.UUID, budget: Budget) -> Decimal:
+        """Calcula el monto total gastado para un presupuesto.
+
+        Suma los gastos del usuario que coinciden con la categoría,
+        el mes y el año del presupuesto dado.
+
+        Args:
+            user_id: UUID del usuario propietario.
+            budget: Presupuesto para el cual calcular el gasto.
+
+        Returns:
+            Monto total gastado como Decimal.
+        """
+        from app.models.personal_expense import PersonalExpense
+        from sqlalchemy import extract
+
+        filters = [
+            PersonalExpense.user_id == user_id,
+            PersonalExpense.deleted_at.is_(None),
+        ]
+        if budget.category_id is not None:
+            filters.append(PersonalExpense.category_id == budget.category_id)
+        if budget.month:
+            filters.append(
+                extract("month", PersonalExpense.expense_date) == budget.month
+            )
+        if budget.year:
+            filters.append(
+                extract("year", PersonalExpense.expense_date) == budget.year
+            )
+
+        stmt = select(
+            func.coalesce(func.sum(PersonalExpense.amount), 0)
+        ).where(*filters)
+        result = await self.session.execute(stmt)
+        return Decimal(str(result.scalar_one()))

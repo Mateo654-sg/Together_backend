@@ -42,6 +42,47 @@ class TestListBudgetsEmpty:
         assert data["data"] == []
         assert data["pagination"]["total"] == 0
 
+    async def test_list_budgets_with_expenses_returns_spent(self, client):
+        token = await register_and_login(client, "mateo@test.com")
+
+        cat_resp = await client.post(
+            "/api/v1/categories",
+            headers=auth_headers(token),
+            json={"name": "Mascotas", "type": "expense"},
+        )
+        category_id = cat_resp.json()["id"]
+
+        await client.post(
+            "/api/v1/budgets",
+            headers=auth_headers(token),
+            json={
+                "category_id": category_id,
+                "amount": 300000,
+                "month": 7,
+                "year": 2026,
+            },
+        )
+        await client.post(
+            "/api/v1/expenses",
+            headers=auth_headers(token),
+            json={
+                "amount": 120000,
+                "description": "Veterinario",
+                "category_id": category_id,
+                "expense_date": "2026-07-10",
+            },
+        )
+
+        response = await client.get(
+            "/api/v1/budgets?month=7&year=2026", headers=auth_headers(token)
+        )
+        assert response.status_code == 200
+        data = response.json()
+        assert data["pagination"]["total"] == 1
+        budget = data["data"][0]
+        assert budget["category_name"] == "Mascotas"
+        assert float(budget["spent"]) == 120000.0
+
 
 class TestCreateBudget:
     async def test_create_monthly_budget(self, client):
