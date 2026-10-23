@@ -23,7 +23,7 @@ class SecurityHeadersMiddleware:
                     "style-src 'self' 'unsafe-inline'; "
                     "frame-src https://accounts.google.com; "
                     "connect-src 'self'; "
-                    "img-src 'self' data:; "
+                    "img-src 'self' data: https://*.s3.amazonaws.com; "
                     "object-src 'none'"
                 )
                 headers["Referrer-Policy"] = "strict-origin-when-cross-origin"

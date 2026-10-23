@@ -30,9 +30,9 @@ class Settings(BaseSettings):
         refresh_token_expire_days: Días de vida del refresh token.
         cors_origins: Orígenes permitidos para CORS.
         openai_api_key: API Key de OpenAI (módulo de IA, futuro).
-        aws_access_key_id: ID de acceso AWS (futuro).
-        aws_secret_access_key: Secreto de acceso AWS (futuro).
-        s3_bucket: Nombre del bucket S3 (futuro).
+        aws_access_key_id: ID de acceso AWS para S3.
+        aws_secret_access_key: Secreto de acceso AWS para S3.
+        s3_bucket: Nombre del bucket S3 donde se almacenan las imágenes.
     """
 
     # App
@@ -44,9 +44,6 @@ class Settings(BaseSettings):
     # Database
     database_url: str
     database_url_sync: str
-
-    # Redis
-    redis_url: str = "redis://localhost:6379/0"
 
     # JWT
     jwt_secret: str
@@ -81,7 +78,7 @@ class Settings(BaseSettings):
     # AI (futuro)
     openai_api_key: str | None = None
 
-    # AWS (futuro)
+    # AWS S3
     aws_access_key_id: str | None = None
     aws_secret_access_key: str | None = None
     s3_bucket: str | None = None

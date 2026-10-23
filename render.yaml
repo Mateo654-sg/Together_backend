@@ -11,8 +11,6 @@ services:
         sync: false
       - key: DATABASE_URL_SYNC
         sync: false
-      - key: REDIS_URL
-        sync: false
       - key: JWT_SECRET
         generateValue: true
       - key: JWT_ALGORITHM
@@ -39,3 +37,9 @@ services:
         sync: false
       - key: GOOGLE_IOS_CLIENT_ID
         sync: false
+      - key: AWS_ACCESS_KEY_ID
+        sync: false
+      - key: AWS_SECRET_ACCESS_KEY
+        sync: false
+      - key: S3_BUCKET
+        value: together-app-gastos-compartidos-bucket

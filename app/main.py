@@ -1,12 +1,14 @@
 """
 Together API — Entry point.
 
-Formato de respuesta de error oficial (Documento 08):
-{
-    "success": false,
-    "message": "...",
-    "errors": []
-}
+Inicializa la aplicación FastAPI con:
+- CORS restringido a los orígenes configurados en CORS_ORIGINS.
+- Rate limiting global vía SlowAPI.
+- Cabeceras de seguridad HTTP (HSTS, CSP, etc.) vía middleware propio.
+- Documentación interactiva deshabilitada en producción para reducir
+  la superficie de ataque (sólo accesible en desarrollo/staging).
+- Manejadores de error unificados con el formato:
+    { "success": false, "message": "...", "errors": [] }
 """
 import logging
 
@@ -26,25 +28,41 @@ from app.middleware.security_headers import SecurityHeadersMiddleware
 
 logger = logging.getLogger(__name__)
 
+# En producción ocultamos los endpoints de documentación para reducir la
+# superficie de ataque. En desarrollo permanecen activos para facilitar el
+# trabajo del equipo.
+_docs_url = None if settings.is_production else "/docs"
+_redoc_url = None if settings.is_production else "/redoc"
+_openapi_url = None if settings.is_production else "/openapi.json"
 
 app = FastAPI(
     title=settings.app_name,
     version=settings.app_version,
-    docs_url="/docs",
-    redoc_url="/redoc",
-    openapi_url="/openapi.json",
+    docs_url=_docs_url,
+    redoc_url=_redoc_url,
+    openapi_url=_openapi_url,
 )
-
 
 app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+
+# Métodos HTTP explícitos: limitamos a los que realmente usa la API para
+# evitar que CORS autorice verbos no controlados (p. ej. TRACE).
+_ALLOWED_METHODS = ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"]
+_ALLOWED_HEADERS = [
+    "Authorization",
+    "Content-Type",
+    "Accept",
+    "X-Requested-With",
+    "X-Request-ID",
+]
 
 app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.cors_origins,
     allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_methods=_ALLOWED_METHODS,
+    allow_headers=_ALLOWED_HEADERS,
 )
 app.add_middleware(SlowAPIMiddleware)
 app.add_middleware(SecurityHeadersMiddleware)

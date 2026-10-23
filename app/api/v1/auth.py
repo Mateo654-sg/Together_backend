@@ -1,3 +1,22 @@
+"""
+Endpoints de autenticación de Together API.
+
+Flujo de tokens implementado:
+- Access token (JWT, 15 min): devuelto en el body de la respuesta y guardado
+  en memoria por el cliente. Nunca se persiste en cookies.
+- Refresh token (opaco, 30 días): enviado en cookie HttpOnly `refresh_token`
+  con path=/api/v1. Invisible para JavaScript del cliente.
+- Rotación de refresh token: en cada llamada a /refresh se genera un par
+  nuevo y el anterior queda invalidado en base de datos.
+
+Seguridad aplicada:
+- Rate limiting en todos los endpoints de auth (slowapi).
+- /forgot-password retorna siempre 204 para evitar enumeración de usuarios.
+- Las cookies llevan `secure=True` en producción (HTTPS obligatorio).
+- `samesite="lax"` permite el envío en navegaciones de primer nivel (SSO) sin
+  abrir la puerta a CSRF desde dominios externos.
+"""
+
 from fastapi import APIRouter, Depends, Request, Response, status
 from sqlalchemy.ext.asyncio import AsyncSession
 

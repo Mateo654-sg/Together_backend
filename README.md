@@ -74,9 +74,13 @@ uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 La API estara disponible en:
 
 - Servidor: `http://localhost:8000`
-- Documentacion Swagger: `http://localhost:8000/docs`
-- Documentacion ReDoc: `http://localhost:8000/redoc`
-- OpenAPI JSON: `http://localhost:8000/openapi.json`
+- Documentacion Swagger: `http://localhost:8000/docs` *(solo en desarrollo)*
+- Documentacion ReDoc: `http://localhost:8000/redoc` *(solo en desarrollo)*
+- OpenAPI JSON: `http://localhost:8000/openapi.json` *(solo en desarrollo)*
+
+> **Nota de seguridad:** En producción (`APP_ENV=production`) los endpoints
+> `/docs`, `/redoc` y `/openapi.json` se deshabilitan automáticamente para
+> reducir la superficie de ataque.
 
 ## Variables de entorno
 
